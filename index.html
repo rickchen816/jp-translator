@@ -6,304 +6,104 @@
   <title>日文口說翻譯官</title>
   <style>
     :root {
-      --bg: #0f0f13;
-      --surface: #1a1a22;
-      --border: #2e2e3a;
-      --primary: #e63946;
-      --primary-glow: rgba(230,57,70,0.3);
-      --jp: #ff6b6b;
-      --zh: #4ecdc4;
-      --text: #f0f0f5;
-      --text-muted: #6b6b80;
-      --radius: 16px;
+      --bg: #0f0f13; --surface: #1a1a22; --border: #2e2e3a;
+      --primary: #e63946; --jp: #ff6b6b; --zh: #4ecdc4;
+      --text: #f0f0f5; --text-muted: #6b6b80; --radius: 16px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
     body {
       font-family: 'Noto Sans TC', 'Noto Sans JP', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      user-select: none;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center; user-select: none;
     }
-
-    header {
-      width: 100%;
-      padding: 20px 24px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
+    header { width: 100%; padding: 20px 24px 12px; display: flex; align-items: center; justify-content: space-between; }
     .app-title { font-size: 18px; font-weight: 700; letter-spacing: 1px; }
     .app-title span { color: var(--jp); }
+    .settings-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+    main { flex: 1; width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; padding: 8px 20px 32px; gap: 14px; }
 
-    .settings-btn {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 13px;
-      cursor: pointer;
-    }
+    .input-lang-row { width: 100%; display: flex; align-items: center; gap: 8px; }
+    .input-lang-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+    .lang-tabs { display: flex; gap: 6px; flex: 1; }
+    .lang-tab { flex: 1; background: var(--surface); border: 1.5px solid var(--border); color: var(--text-muted); border-radius: 8px; padding: 7px 0; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.2s; }
+    .lang-tab.active-jp { border-color: var(--jp); color: var(--jp); background: rgba(255,107,107,0.1); }
+    .lang-tab.active-zh { border-color: var(--zh); color: var(--zh); background: rgba(78,205,196,0.1); }
 
-    main {
-      flex: 1;
-      width: 100%;
-      max-width: 480px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 8px 20px 32px;
-      gap: 16px;
-    }
-
-    /* Direction badge */
-    .dir-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 6px 18px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-muted);
-      transition: all 0.3s;
-    }
+    .dir-badge { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 5px 16px; font-size: 13px; font-weight: 600; color: var(--text-muted); transition: all 0.3s; align-self: center; }
     .dir-badge.jp-to-zh { color: var(--jp); border-color: var(--jp); background: rgba(255,107,107,0.08); }
     .dir-badge.zh-to-jp { color: var(--zh); border-color: var(--zh); background: rgba(78,205,196,0.08); }
 
-    /* Cards */
     .cards { width: 100%; display: flex; flex-direction: column; gap: 10px; }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      min-height: 72px;
-      position: relative;
-    }
-
-    .card-label {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      margin-bottom: 6px;
-    }
-    .card-label.jp { color: var(--jp); }
-    .card-label.zh { color: var(--zh); }
-
-    .card-text {
-      font-size: 19px;
-      line-height: 1.65;
-      min-height: 32px;
-      word-break: break-all;
-    }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; min-height: 70px; position: relative; }
+    .card-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+    .card-label.jp { color: var(--jp); } .card-label.zh { color: var(--zh); }
+    .card-text { font-size: 19px; line-height: 1.65; min-height: 30px; word-break: break-all; }
     .card-text.placeholder { color: var(--text-muted); font-size: 14px; }
-    .card-text.listening   { color: var(--jp); }
-
-    .copy-mini {
-      position: absolute;
-      top: 10px; right: 12px;
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      border-radius: 6px;
-      padding: 2px 8px;
-      font-size: 11px;
-      cursor: pointer;
-      display: none;
-    }
+    .card-text.listening { color: var(--jp); }
+    .copy-mini { position: absolute; top: 10px; right: 12px; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 6px; padding: 2px 8px; font-size: 11px; cursor: pointer; display: none; }
     .card:hover .copy-mini { display: block; }
 
-    /* Waveform */
-    .visualizer {
-      width: 100%;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
+    .visualizer { width: 100%; height: 40px; display: flex; align-items: center; justify-content: center; gap: 3px; opacity: 0; transition: opacity 0.3s; }
     .visualizer.active { opacity: 1; }
+    .bar { width: 4px; border-radius: 2px; background: var(--jp); animation: wave 0.8s ease-in-out infinite; height: 8px; }
+    .bar:nth-child(1){animation-delay:0.0s}.bar:nth-child(2){animation-delay:0.1s}.bar:nth-child(3){animation-delay:0.2s}
+    .bar:nth-child(4){animation-delay:0.3s}.bar:nth-child(5){animation-delay:0.4s}.bar:nth-child(6){animation-delay:0.3s}
+    .bar:nth-child(7){animation-delay:0.2s}.bar:nth-child(8){animation-delay:0.1s}.bar:nth-child(9){animation-delay:0.0s}
+    @keyframes wave { 0%,100%{height:8px} 50%{height:36px} }
 
-    .bar {
-      width: 4px;
-      border-radius: 2px;
-      background: var(--jp);
-      animation: wave 0.8s ease-in-out infinite;
-      height: 8px;
-    }
-    .bar:nth-child(1){animation-delay:0.0s}
-    .bar:nth-child(2){animation-delay:0.1s}
-    .bar:nth-child(3){animation-delay:0.2s}
-    .bar:nth-child(4){animation-delay:0.3s}
-    .bar:nth-child(5){animation-delay:0.4s}
-    .bar:nth-child(6){animation-delay:0.3s}
-    .bar:nth-child(7){animation-delay:0.2s}
-    .bar:nth-child(8){animation-delay:0.1s}
-    .bar:nth-child(9){animation-delay:0.0s}
-
-    @keyframes wave {
-      0%,100% { height: 8px; }
-      50%      { height: 36px; }
-    }
-
-    /* PTT */
     .ptt-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .ptt-hint { font-size: 13px; color: var(--text-muted); }
-
-    .ptt-btn {
-      width: 136px;
-      height: 136px;
-      border-radius: 50%;
-      border: none;
-      background: radial-gradient(circle at 40% 35%, #e63946, #9b1c28);
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      transition: transform 0.1s, box-shadow 0.3s;
-      touch-action: none;
-      box-shadow: 0 4px 24px rgba(230,57,70,0.3);
-    }
+    .ptt-btn { width: 132px; height: 132px; border-radius: 50%; border: none; background: radial-gradient(circle at 40% 35%, #e63946, #9b1c28); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; transition: transform 0.1s, box-shadow 0.3s; touch-action: none; box-shadow: 0 4px 24px rgba(230,57,70,0.3); }
     .ptt-btn:hover { transform: scale(1.03); }
-    .ptt-btn.pressed {
-      transform: scale(0.93);
-      animation: pulse 1s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%,100% { box-shadow: 0 0 0 10px rgba(230,57,70,0.25); }
-      50%      { box-shadow: 0 0 0 26px rgba(230,57,70,0.08); }
-    }
-
-    .ptt-icon  { font-size: 38px; }
-    .ptt-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: rgba(255,255,255,0.85); }
-
+    .ptt-btn.pressed { transform: scale(0.93); animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 10px rgba(230,57,70,0.25)} 50%{box-shadow:0 0 0 26px rgba(230,57,70,0.08)} }
+    .ptt-icon { font-size: 38px; } .ptt-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: rgba(255,255,255,0.85); }
     .status { font-size: 14px; color: var(--text-muted); text-align: center; height: 20px; }
-    .status.recording   { color: var(--jp); }
-    .status.translating { color: var(--zh); }
+    .status.recording { color: var(--jp); } .status.translating { color: var(--zh); }
 
-    /* Error */
-    .error-bar {
-      display: none;
-      width: 100%;
-      background: #3d1515;
-      border: 1px solid #7f1d1d;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 13px;
-      color: #fca5a5;
-    }
+    .error-bar { display: none; width: 100%; background: #3d1515; border: 1px solid #7f1d1d; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #fca5a5; }
 
-    /* History */
     .history { width: 100%; }
-    .history-title {
-      font-size: 11px; color: var(--text-muted);
-      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
-    }
-    .history-list {
-      display: flex; flex-direction: column; gap: 8px;
-      max-height: 180px; overflow-y: auto;
-    }
-    .history-item {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    .history-item .dir   { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
-    .history-item .orig  { color: var(--text-muted); margin-bottom: 2px; }
+    .history-title { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+    .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; }
+    .history-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 13px; line-height: 1.5; }
+    .history-item .dir { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+    .history-item .orig { color: var(--text-muted); margin-bottom: 2px; }
     .history-item .trans { color: var(--text); }
 
-    /* Settings */
-    .settings-panel {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 100;
-      align-items: flex-end;
-      justify-content: center;
-    }
+    .settings-panel { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: flex-end; justify-content: center; }
     .settings-panel.open { display: flex; }
-
-    .settings-box {
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      border-radius: 20px 20px 0 0;
-      padding: 24px 24px 40px;
-      width: 100%; max-width: 480px;
-    }
+    .settings-box { background: var(--surface); border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; padding: 24px 24px 40px; width: 100%; max-width: 480px; }
     .settings-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
-
     .field { margin-bottom: 16px; }
     .field label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
-    .field input {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-size: 14px;
-      color: var(--text);
-      outline: none;
-    }
+    .field input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 14px; color: var(--text); outline: none; }
     .field input:focus { border-color: var(--primary); }
+    .close-settings { width: 100%; background: var(--primary); border: none; color: white; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; }
 
-    .close-settings {
-      width: 100%;
-      background: var(--primary);
-      border: none; color: white;
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 15px; font-weight: 600;
-      cursor: pointer; margin-top: 8px;
-    }
-
-    /* Toast */
-    .toast {
-      position: fixed; bottom: 24px; left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: #333; color: white;
-      padding: 10px 20px; border-radius: 999px;
-      font-size: 13px; transition: transform 0.3s;
-      z-index: 200; pointer-events: none;
-    }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #333; color: white; padding: 10px 20px; border-radius: 999px; font-size: 13px; transition: transform 0.3s; z-index: 200; pointer-events: none; }
     .toast.show { transform: translateX(-50%) translateY(0); }
-
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
   </style>
 </head>
 <body>
-
 <header>
   <div class="app-title"><span>日文</span> 口說翻譯官</div>
   <button class="settings-btn" onclick="openSettings()">⚙ 設定</button>
 </header>
-
 <main>
-  <div class="dir-badge" id="dirBadge">🎙 自動辨識語言</div>
-
+  <div class="input-lang-row">
+    <span class="input-lang-label">說話語言：</span>
+    <div class="lang-tabs">
+      <button class="lang-tab active-jp" id="tabJP" onclick="setInputLang('ja')">🇯🇵 日文</button>
+      <button class="lang-tab" id="tabZH" onclick="setInputLang('zh')">🇹🇼 中文</button>
+    </div>
+  </div>
+  <div class="dir-badge jp-to-zh" id="dirBadge">🇯🇵 日文 → 繁體中文 🇹🇼</div>
   <div class="cards">
     <div class="card">
       <div class="card-label jp">說的話</div>
-      <div class="card-text placeholder" id="srcDisplay">按住下方按鈕，說日文或中文…</div>
+      <div class="card-text placeholder" id="srcDisplay">按住下方按鈕開始說話…</div>
       <button class="copy-mini" onclick="copyText('src')">複製</button>
     </div>
     <div class="card">
@@ -312,13 +112,11 @@
       <button class="copy-mini" onclick="copyText('dst')">複製</button>
     </div>
   </div>
-
   <div class="visualizer" id="viz">
     <div class="bar"></div><div class="bar"></div><div class="bar"></div>
     <div class="bar"></div><div class="bar"></div><div class="bar"></div>
     <div class="bar"></div><div class="bar"></div><div class="bar"></div>
   </div>
-
   <div class="ptt-wrap">
     <div class="ptt-hint">按住說話，放開翻譯</div>
     <button class="ptt-btn" id="pttBtn"
@@ -329,15 +127,12 @@
     </button>
     <div class="status" id="status">就緒</div>
   </div>
-
   <div class="error-bar" id="errorBar"></div>
-
   <div class="history" id="historyWrap" style="display:none">
     <div class="history-title">歷史記錄</div>
     <div class="history-list" id="historyList"></div>
   </div>
 </main>
-
 <div class="settings-panel" id="settingsPanel">
   <div class="settings-box">
     <h3>⚙ 設定</h3>
@@ -352,16 +147,9 @@
     <button class="close-settings" onclick="closeSettings()">完成</button>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
-
 <script>
-  // ──────────────────────────────────────────
-  //  填入你的 Gemini API Key
-  // ──────────────────────────────────────────
-  const BUILT_IN_KEY = "AIzaSyCJfN1YbcC-S8I2tmrNMxGiIfrlQxBgj_U";
-  // ──────────────────────────────────────────
-
+  const BUILT_IN_KEY = "YOUR_GEMINI_API_KEY_HERE";
   const GEMINI_MODEL = "gemini-2.0-flash";
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -370,9 +158,10 @@
     document.getElementById("pttBtn").disabled = true;
   }
 
+  let inputLang = "ja";
+  let recognition = null;
   let isRecording = false;
-  let recJA = null, recZH = null;
-  let txJA = "", txZH = "";
+  let transcript = "";
   let history = [];
 
   const pttBtn     = document.getElementById("pttBtn");
@@ -384,74 +173,71 @@
   const errorBar   = document.getElementById("errorBar");
   const dirBadge   = document.getElementById("dirBadge");
 
-  // 偵測語言：有平假名/片假名 → 日文，否則 → 中文
-  function detectLang(text) {
-    return /[぀-ゟ゠-ヿ]/.test(text) ? "ja" : "zh";
+  function setInputLang(lang) {
+    inputLang = lang;
+    document.getElementById("tabJP").className = "lang-tab" + (lang === "ja" ? " active-jp" : "");
+    document.getElementById("tabZH").className = "lang-tab" + (lang === "zh" ? " active-zh" : "");
+    dirBadge.className = "dir-badge " + (lang === "ja" ? "jp-to-zh" : "zh-to-jp");
+    dirBadge.textContent = lang === "ja" ? "🇯🇵 日文 → 繁體中文 🇹🇼" : "🇹🇼 繁中 → 日文 🇯🇵";
+    srcDisplay.className = "card-text placeholder";
+    srcDisplay.textContent = "按住下方按鈕開始說話…";
+    dstDisplay.className = "card-text placeholder";
+    dstDisplay.textContent = "翻譯結果會出現在這裡…";
   }
 
-  function buildSR(lang, onText) {
-    const r = new SR();
-    r.continuous = false;
-    r.interimResults = true;
-    r.lang = lang;
-
-    r.onresult = (e) => {
-      let text = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        text += e.results[i][0].transcript;
-      }
-      if (text) onText(text);
-    };
-
-    r.onerror = (e) => {
-      if (e.error === "no-speech" || e.error === "aborted") return;
-      if (e.error === "not-allowed") showError("麥克風權限被拒絕，請允許後再試。");
-    };
-
-    // 按住期間持續辨識
-    r.onend = () => {
-      if (isRecording) { try { r.start(); } catch(_) {} }
-    };
-
-    return r;
+  function autoSwapLang() {
+    setInputLang(inputLang === "ja" ? "zh" : "ja");
   }
 
   function startRec(e) {
     e.preventDefault();
     if (isRecording || !SR) return;
     isRecording = true;
-    txJA = ""; txZH = "";
+    transcript = "";
 
     srcDisplay.className = "card-text listening";
     srcDisplay.textContent = "聆聽中…";
     dstDisplay.className = "card-text placeholder";
     dstDisplay.textContent = "翻譯結果會出現在這裡…";
     errorBar.style.display = "none";
-    dirBadge.className = "dir-badge";
-    dirBadge.textContent = "🎙 聆聽中…";
 
     pttBtn.classList.add("pressed");
     pttLabel.textContent = "放開翻譯";
     setStatus("🔴 錄音中…", "recording");
     viz.classList.add("active");
 
-    // 同時啟動日文 & 中文辨識
-    recJA = buildSR("ja-JP", (t) => {
-      txJA = t;
-      srcDisplay.className = "card-text listening";
-      srcDisplay.textContent = t;
-    });
-    recZH = buildSR("zh-TW", (t) => {
-      txZH = t;
-      // 日文沒辨識到才顯示中文結果
-      if (!txJA) {
-        srcDisplay.className = "card-text listening";
-        srcDisplay.textContent = t;
-      }
-    });
+    recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = inputLang === "ja" ? "ja-JP" : "zh-TW";
 
-    try { recJA.start(); } catch(_) {}
-    try { recZH.start(); } catch(_) {}
+    recognition.onresult = (e) => {
+      let text = "";
+      for (let i = 0; i < e.results.length; i++) {
+        text += e.results[i][0].transcript;
+      }
+      if (text) {
+        transcript = text;
+        srcDisplay.className = "card-text listening";
+        srcDisplay.textContent = text;
+      }
+    };
+
+    recognition.onerror = (e) => {
+      if (e.error === "no-speech") return;
+      if (e.error === "not-allowed") showError("麥克風權限被拒絕，請允許後再試。");
+      else showError("語音辨識錯誤：" + e.error);
+      resetBtn();
+    };
+
+    recognition.onend = () => {
+      if (isRecording) { try { recognition.start(); } catch(_) {} }
+    };
+
+    try { recognition.start(); } catch(err) {
+      showError("無法啟動語音辨識：" + err.message);
+      resetBtn();
+    }
   }
 
   function stopRec(e) {
@@ -459,33 +245,27 @@
     if (!isRecording) return;
     isRecording = false;
 
-    [recJA, recZH].forEach(r => {
-      if (!r) return;
-      r.onend = null;
-      try { r.stop(); } catch(_) {}
-    });
-    recJA = null; recZH = null;
-
-    pttBtn.classList.remove("pressed");
-    pttLabel.textContent = "按住說話";
-    viz.classList.remove("active");
-
-    // 選最佳文字：優先日文；若都有，取較長的
-    const text = (txJA && txZH)
-      ? (txJA.length >= txZH.length ? txJA : txZH)
-      : (txJA || txZH || "");
-
-    if (!text.trim()) {
-      setStatus("就緒", "");
-      dirBadge.className = "dir-badge";
-      dirBadge.textContent = "🎙 自動辨識語言";
-      return;
+    if (recognition) {
+      recognition.onend = null;
+      try { recognition.stop(); } catch(_) {}
+      recognition = null;
     }
+
+    resetBtn();
+
+    const text = transcript.trim();
+    if (!text) { setStatus("就緒", ""); return; }
 
     srcDisplay.className = "card-text";
     srcDisplay.textContent = text;
     setStatus("⏳ 翻譯中…", "translating");
-    translateText(text.trim());
+    translateText(text);
+  }
+
+  function resetBtn() {
+    pttBtn.classList.remove("pressed");
+    pttLabel.textContent = "按住說話";
+    viz.classList.remove("active");
   }
 
   async function translateText(text) {
@@ -498,20 +278,14 @@
       return;
     }
 
-    const prompt =
-`你是專業雙語口譯員，負責日文與繁體中文的即時口譯。
-
-請自動判斷輸入文字的語言，再翻譯：
-- 若是【日文】→ 翻譯成繁體中文
-- 若是【中文】→ 翻譯成日文；使用自然日常口語，搭配適當敬語（です・ます 體），語氣親切自然，避免生硬書面感
-
-只輸出翻譯結果，不加任何說明、標注或引號。
-
-輸入：${text}`;
+    const isJP = inputLang === "ja";
+    const prompt = isJP
+      ? "請將以下日文翻譯成繁體中文，只輸出翻譯結果，不加任何說明：\n\n" + text
+      : "請將以下繁體中文翻譯成日文，使用自然日常口語並搭配適當敬語（です・ます 體），語氣親切自然，只輸出翻譯結果，不加任何說明：\n\n" + text;
 
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+        "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + apiKey,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -524,24 +298,21 @@
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error?.message || `HTTP ${res.status}`);
+        throw new Error(err && err.error && err.error.message ? err.error.message : "HTTP " + res.status);
       }
 
-      const data   = await res.json();
-      const result = (data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
+      const data = await res.json();
+      const result = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text ? data.candidates[0].content.parts[0].text : "").trim();
 
       dstDisplay.className = "card-text";
       dstDisplay.textContent = result;
       setStatus("✅ 翻譯完成", "");
 
-      const isJP = detectLang(text) === "ja";
-      dirBadge.className = "dir-badge " + (isJP ? "jp-to-zh" : "zh-to-jp");
-      dirBadge.textContent = isJP ? "🇯🇵 日文  →  繁體中文 🇹🇼" : "🇹🇼 繁中  →  日文 🇯🇵";
-
       speak(result, isJP ? "zh-TW" : "ja-JP");
       addHistory(text, result, isJP);
+      setTimeout(function() { autoSwapLang(); }, 800);
 
-    } catch (err) {
+    } catch(err) {
       showError("翻譯失敗：" + err.message);
       setStatus("就緒", "");
     }
@@ -550,61 +321,54 @@
   function speak(text, lang) {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang  = lang;
-    utt.rate  = parseFloat(document.getElementById("ttsRate").value) || 1.0;
-    const v   = speechSynthesis.getVoices().find(v => v.lang.startsWith(lang.slice(0,2)));
+    var utt = new SpeechSynthesisUtterance(text);
+    utt.lang = lang;
+    utt.rate = parseFloat(document.getElementById("ttsRate").value) || 1.0;
+    var v = speechSynthesis.getVoices().find(function(v){ return v.lang.indexOf(lang.slice(0,2)) === 0; });
     if (v) utt.voice = v;
     speechSynthesis.speak(utt);
   }
 
   if (window.speechSynthesis) {
     speechSynthesis.getVoices();
-    speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+    speechSynthesis.onvoiceschanged = function() { speechSynthesis.getVoices(); };
   }
 
   function addHistory(orig, trans, isJP) {
-    history.unshift({ orig, trans, isJP });
+    history.unshift({ orig: orig, trans: trans, isJP: isJP });
     if (history.length > 10) history.pop();
-    const wrap = document.getElementById("historyWrap");
-    const list = document.getElementById("historyList");
+    var wrap = document.getElementById("historyWrap");
+    var list = document.getElementById("historyList");
     wrap.style.display = "block";
-    list.innerHTML = history.map(h => `
-      <div class="history-item">
-        <div class="dir">${h.isJP ? "🇯🇵 → 🇹🇼" : "🇹🇼 → 🇯🇵"}</div>
-        <div class="orig">${escHtml(h.orig)}</div>
-        <div class="trans">${escHtml(h.trans)}</div>
-      </div>`).join("");
+    list.innerHTML = history.map(function(h) {
+      return '<div class="history-item"><div class="dir">' + (h.isJP ? "🇯🇵→🇹🇼" : "🇹🇼→🇯🇵") + '</div><div class="orig">' + escHtml(h.orig) + '</div><div class="trans">' + escHtml(h.trans) + '</div></div>';
+    }).join("");
   }
 
   function setStatus(msg, cls) { statusEl.textContent = msg; statusEl.className = "status " + cls; }
-
   function showError(msg) { errorBar.textContent = "⚠️ " + msg; errorBar.style.display = "block"; }
 
   function copyText(side) {
-    const el = side === "src" ? srcDisplay : dstDisplay;
+    var el = side === "src" ? srcDisplay : dstDisplay;
     if (el.classList.contains("placeholder")) return;
-    navigator.clipboard.writeText(el.textContent).then(() => showToast("已複製"));
+    navigator.clipboard.writeText(el.textContent).then(function() { showToast("已複製"); });
   }
 
   function showToast(msg) {
-    const t = document.getElementById("toast");
+    var t = document.getElementById("toast");
     t.textContent = msg; t.classList.add("show");
-    setTimeout(() => t.classList.remove("show"), 2000);
+    setTimeout(function() { t.classList.remove("show"); }, 2000);
   }
 
-  function escHtml(s) {
-    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  }
-
-  function openSettings()  { document.getElementById("settingsPanel").classList.add("open"); }
+  function escHtml(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function openSettings() { document.getElementById("settingsPanel").classList.add("open"); }
   function closeSettings() { document.getElementById("settingsPanel").classList.remove("open"); }
 
-  document.getElementById("settingsPanel").addEventListener("click", e => {
+  document.getElementById("settingsPanel").addEventListener("click", function(e) {
     if (e.target === document.getElementById("settingsPanel")) closeSettings();
   });
 
-  pttBtn.addEventListener("contextmenu", e => e.preventDefault());
+  pttBtn.addEventListener("contextmenu", function(e) { e.preventDefault(); });
 </script>
 </body>
 </html>
