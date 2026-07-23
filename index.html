@@ -137,8 +137,8 @@
   <div class="settings-box">
     <h3>⚙ 設定</h3>
     <div class="field">
-      <label>Gemini API Key</label>
-      <input type="password" id="apiKeyInput" placeholder="AIza…（空白則使用內建 Key）" />
+      <label>OpenRouter API Key（<a href="https://openrouter.ai/keys" target="_blank" style="color:var(--zh)">openrouter.ai/keys</a> 取得）</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-or-…" />
     </div>
     <div class="field">
       <label>語音朗讀速度（0.5 ～ 2.0）</label>
@@ -149,8 +149,8 @@
 </div>
 <div class="toast" id="toast"></div>
 <script>
-  const BUILT_IN_KEY = "YOUR_GEMINI_API_KEY_HERE";
-  const GEMINI_MODEL = "gemini-2.0-flash";
+  const BUILT_IN_KEY = "";
+  const OR_MODEL = "google/gemini-2.0-flash-exp:free";
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
   if (!SR) {
@@ -272,8 +272,8 @@
     const userKey = document.getElementById("apiKeyInput").value.trim();
     const apiKey  = userKey || BUILT_IN_KEY;
 
-    if (!apiKey || apiKey === "AQ.Ab8RN6J9N4o_3rbyP38o49CP6rfPIwyMf3es99i7fBunBzgq-w") {
-      showError("請在設定中填入 Gemini API Key");
+    if (!apiKey) {
+      showError("請在設定中填入 OpenRouter API Key（sk-or-...）");
       setStatus("就緒", "");
       return;
     }
@@ -284,20 +284,15 @@
       : "請將以下繁體中文翻譯成日文，使用自然日常口語並搭配適當敬語（です・ます 體），語氣親切自然，只輸出翻譯結果，不加任何說明：\n\n" + text;
 
     try {
-      // AQ. 開頭的新格式 Key 用 Bearer token，AIza 開頭用 query parameter
-      const isAuthKey = apiKey.startsWith("AQ.");
-      const url = isAuthKey
-        ? "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent"
-        : "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + apiKey;
-      const headers = { "Content-Type": "application/json" };
-      if (isAuthKey) headers["Authorization"] = "Bearer " + apiKey;
-
-      const res = await fetch(url, {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
-          headers: headers,
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + apiKey
+          },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 1024 }
+            model: OR_MODEL,
+            messages: [{ role: "user", content: prompt }]
           })
         }
       );
@@ -308,7 +303,7 @@
       }
 
       const data = await res.json();
-      const result = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text ? data.candidates[0].content.parts[0].text : "").trim();
+      const result = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content ? data.choices[0].message.content : "").trim();
 
       dstDisplay.className = "card-text";
       dstDisplay.textContent = result;
