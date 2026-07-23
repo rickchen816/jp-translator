@@ -149,7 +149,7 @@
 </div>
 <div class="toast" id="toast"></div>
 <script>
-  const BUILT_IN_KEY = "YOUR_GEMINI_API_KEY_HERE";
+  const BUILT_IN_KEY = "AQ.Ab8RN6Lr4aVgZOZM5BR6h1bHgxsXY5GqiqgtoMrfR9gWAZGa4Q";
   const GEMINI_MODEL = "gemini-2.0-flash";
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -272,7 +272,7 @@
     const userKey = document.getElementById("apiKeyInput").value.trim();
     const apiKey  = userKey || BUILT_IN_KEY;
 
-    if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY_HERE") {
+    if (!apiKey || apiKey === "AQ.Ab8RN6Lr4aVgZOZM5BR6h1bHgxsXY5GqiqgtoMrfR9gWAZGa4Q") {
       showError("請在設定中填入 Gemini API Key");
       setStatus("就緒", "");
       return;
