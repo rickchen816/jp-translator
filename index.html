@@ -149,7 +149,7 @@
 </div>
 <div class="toast" id="toast"></div>
 <script>
-  const BUILT_IN_KEY = "AQ.Ab8RN6Lr4aVgZOZM5BR6h1bHgxsXY5GqiqgtoMrfR9gWAZGa4Q";
+  const BUILT_IN_KEY = "YOUR_GEMINI_API_KEY_HERE";
   const GEMINI_MODEL = "gemini-2.0-flash";
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -272,7 +272,7 @@
     const userKey = document.getElementById("apiKeyInput").value.trim();
     const apiKey  = userKey || BUILT_IN_KEY;
 
-    if (!apiKey || apiKey === "AQ.Ab8RN6Lr4aVgZOZM5BR6h1bHgxsXY5GqiqgtoMrfR9gWAZGa4Q") {
+    if (!apiKey || apiKey === "AQ.Ab8RN6J9N4o_3rbyP38o49CP6rfPIwyMf3es99i7fBunBzgq-w") {
       showError("請在設定中填入 Gemini API Key");
       setStatus("就緒", "");
       return;
@@ -284,11 +284,17 @@
       : "請將以下繁體中文翻譯成日文，使用自然日常口語並搭配適當敬語（です・ます 體），語氣親切自然，只輸出翻譯結果，不加任何說明：\n\n" + text;
 
     try {
-      const res = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + apiKey,
-        {
+      // AQ. 開頭的新格式 Key 用 Bearer token，AIza 開頭用 query parameter
+      const isAuthKey = apiKey.startsWith("AQ.");
+      const url = isAuthKey
+        ? "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent"
+        : "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + apiKey;
+      const headers = { "Content-Type": "application/json" };
+      if (isAuthKey) headers["Authorization"] = "Bearer " + apiKey;
+
+      const res = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: headers,
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: { temperature: 0.1, maxOutputTokens: 1024 }
@@ -361,8 +367,23 @@
   }
 
   function escHtml(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-  function openSettings() { document.getElementById("settingsPanel").classList.add("open"); }
-  function closeSettings() { document.getElementById("settingsPanel").classList.remove("open"); }
+  function openSettings() {
+    // 打開時載入已儲存的 key
+    var saved = localStorage.getItem("gemini_key");
+    if (saved) document.getElementById("apiKeyInput").value = saved;
+    document.getElementById("settingsPanel").classList.add("open");
+  }
+  function closeSettings() {
+    // 關閉時儲存 key
+    var key = document.getElementById("apiKeyInput").value.trim();
+    if (key) localStorage.setItem("gemini_key", key);
+    document.getElementById("settingsPanel").classList.remove("open");
+  }
+  // 頁面載入時也自動填入
+  (function() {
+    var saved = localStorage.getItem("gemini_key");
+    if (saved) document.getElementById("apiKeyInput").value = saved;
+  })();
 
   document.getElementById("settingsPanel").addEventListener("click", function(e) {
     if (e.target === document.getElementById("settingsPanel")) closeSettings();
