@@ -69,7 +69,7 @@
         <label for="modelSelect">模型選擇：</label>
         <select id="modelSelect">
             <option value="gemini-3.6-flash">gemini-3.6-flash (極速推薦)</option>
-            <option value="gemini-2.5-flash">gemini-2.5-flash (省配額備用)</option>
+            <option value="gemini-3.5-flash">gemini-3.5-flash (穩定備用)</option>
         </select>
     </div>
 
@@ -96,7 +96,7 @@
         <button class="btn-secondary" onclick="copyResult()">📋 複製結果</button>
     </div>
 
-    <div class="tip-info">💡 專純中日對講版：自動辨識男/女聲與語意，支援手動修正與備援切換。</div>
+    <div class="tip-info">💡 已修正備援模型為 gemini-3.5-flash，限流時自動無縫接手！</div>
 </div>
 
 <script>
@@ -126,9 +126,9 @@
         systemVoices = window.speechSynthesis.getVoices();
     }
 
-    // 自動防限流備援 API 機制
+    // 正確修復：採用 gemini-3.5-flash 作為唯一備援模型
     async function fetchGeminiWithFallback(apiKey, primaryModel, requestBody) {
-        const fallbackModels = [primaryModel, "gemini-2.5-flash"].filter((v, i, a) => a.indexOf(v) === i);
+        const fallbackModels = [primaryModel, "gemini-3.5-flash"].filter((v, i, a) => a.indexOf(v) === i);
         
         for (let model of fallbackModels) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -146,7 +146,7 @@
                 }
 
                 if (data.error && (data.error.code === 429 || data.error.message.includes("quota"))) {
-                    console.warn(`[API] ${model} 觸發限流，自動無縫切換備用模型...`);
+                    console.warn(`[API] ${model} 觸發限流，自動切換至 3.5-flash 備用模型...`);
                     continue;
                 } else {
                     throw new Error(data.error ? data.error.message : "API 錯誤");
@@ -224,7 +224,6 @@
             const base64Audio = reader.result.split(',')[1];
             const mimeType = audioBlob.type || "audio/webm";
 
-            // 精簡版 中日專用 Prompt
             const promptText = `語音中日翻譯任務：
 1. 判斷性別("male"/"female")
 2. 轉寫內容("original")
