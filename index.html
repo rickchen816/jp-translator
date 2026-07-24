@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>極速雙向日文翻譯官</title>
+    <title>萬用多國語音對講翻譯官</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f2f2f7; color: #1c1c1e; padding: 16px; display: flex; justify-content: center; }
@@ -59,17 +60,27 @@
 <body>
 
 <div class="card">
-    <h2>⚡ 智慧雙向對講翻譯官</h2>
+    <h2>🌐 萬用多國語音對講翻譯官</h2>
 
     <div class="form-group">
         <label for="apiKey">Gemini API Key：</label>
         <input type="password" id="apiKey" placeholder="貼上 API Key (AQ...)">
     </div>
 
+    <!-- 選擇對話的外國語言 -->
+    <div class="form-group">
+        <label for="targetLangSelect">對方使用的語言（翻譯目標）：</label>
+        <select id="targetLangSelect">
+            <option value="ja">🇯🇵 日本語 (Japanese)</option>
+            <option value="en">🇺🇸 美語 (English - US)</option>
+            <option value="ko">🇰🇷 韓語 (Korean)</option>
+        </select>
+    </div>
+
     <div class="form-group">
         <label for="modelSelect">模型選擇：</label>
         <select id="modelSelect">
-            <option value="gemini-3.6-flash">gemini-3.6-flash (語音辨識首選)</option>
+            <option value="gemini-3.6-flash">gemini-3.6-flash (多模態語音首選)</option>
             <option value="gemini-3.5-flash">gemini-3.5-flash</option>
             <option value="gemini-2.5-flash">gemini-2.5-flash</option>
         </select>
@@ -77,10 +88,10 @@
 
     <!-- 智慧對講按鈕 -->
     <button class="btn-smart-mic" id="micBtn" onclick="toggleRecording()">
-        🎤 按一下說話（中/日皆可）
+        🎤 按一下說話（中文與外語皆可）
     </button>
 
-    <!-- 新增：語音辨識原文視窗 (可編輯) -->
+    <!-- 語音辨識原文視窗 (可編輯) -->
     <div class="form-group">
         <label for="originalText" id="originalLabel">語音辨識原文（若有錯可在此手動修改）：</label>
         <textarea id="originalText" placeholder="錄音完畢後，AI 聽到的原文會顯示在這裡..."></textarea>
@@ -98,7 +109,7 @@
         <button class="btn-secondary" onclick="copyResult()">📋 複製結果</button>
     </div>
 
-    <div class="tip-info">💡 聽錯時可在「原文視窗」直接修改，再按綠色按鈕重新發音！</div>
+    <div class="tip-info">💡 選擇目標外語後按下錄音，講中文或外語皆可自動對講！</div>
 </div>
 
 <script>
@@ -106,7 +117,7 @@
     let audioChunks = [];
     let isRecording = false;
     let lastTranslatedText = "";
-    let lastTargetLang = "";
+    let lastTargetLangCode = "ja-JP"; // 發音語言代碼
     let lastDetectedGender = "female"; 
     let lastDetectedLang = "zh";
     let systemVoices = [];
@@ -117,6 +128,9 @@
 
         const savedModel = localStorage.getItem("gemini_model");
         if (savedModel) document.getElementById("modelSelect").value = savedModel;
+
+        const savedLang = localStorage.getItem("target_lang");
+        if (savedLang) document.getElementById("targetLangSelect").value = savedLang;
 
         loadVoices();
         if (speechSynthesis.onvoiceschanged !== undefined) {
@@ -169,6 +183,7 @@
     async function processAudioTranslation(audioBlob) {
         const API_KEY = document.getElementById("apiKey").value.trim();
         const selectedModel = document.getElementById("modelSelect").value;
+        const targetLang = document.getElementById("targetLangSelect").value; // ja, en, ko
         const statusLabel = document.getElementById("detectedLang");
         const output = document.getElementById("outputText");
         const originalInput = document.getElementById("originalText");
@@ -181,18 +196,22 @@
 
         localStorage.setItem("gemini_api_key", API_KEY);
         localStorage.setItem("gemini_model", selectedModel);
+        localStorage.setItem("target_lang", targetLang);
+
+        const langNameMap = { ja: "日文", en: "美式英文", ko: "韓文" };
+        const selectedLangName = langNameMap[targetLang];
 
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
             const base64Audio = reader.result.split(',')[1];
 
-            const promptText = `你是一個專業的中日雙向即時翻譯官，並且具備聲學辨識能力。請仔細聽這段語音音訊：
+            const promptText = `你是一個專業的多國語言雙向即時翻譯官，並且具備聲學辨識能力。請仔細聽這段語音音訊：
 1. 【性別辨識】：分析說話者的音色與頻率，判斷說話者是男性("male")還是女性("female")。
 2. 【語音轉文字】：將聽到的內容完整寫出 ("original")。
 3. 【語言與翻譯】：
-   - 如果說話者講的是【中文】：翻譯成適合日本旅遊使用的禮貌敬語【日文】（丁寧語）。
-   - 如果說話者講的是【日文】：翻譯成【繁體中文】。
+   - 如果說話者講的是【中文】：翻譯成適合日常旅遊使用的禮貌【${selectedLangName}】。
+   - 如果說話者講的是【外語 (${selectedLangName}或任何外語)】：翻譯成【繁體中文】。
 4. 請嚴格按照以下 JSON 格式回答，不要加任何 Markdown 標記：
 {"gender": "male", "detected": "zh", "original": "聽到的原文", "translation": "翻譯後的內容"}`;
 
@@ -225,19 +244,23 @@
                     lastDetectedGender = parsed.gender; 
                     lastDetectedLang = parsed.detected;
 
-                    // 填入原文視窗
                     originalInput.value = parsed.original;
 
                     const genderTag = lastDetectedGender === "male" ? "👨 男聲" : "👩 女聲";
 
                     if (parsed.detected === "zh") {
-                        statusLabel.innerText = `偵測到：【中文 (${genderTag})】 ➔ 譯為日文：`;
-                        lastTargetLang = "ja-JP";
+                        statusLabel.innerText = `偵測到：【中文 (${genderTag})】 ➔ 譯為${selectedLangName}：`;
+                        
+                        // 設定對應外語的 Voice Code
+                        if (targetLang === 'ja') lastTargetLangCode = 'ja-JP';
+                        else if (targetLang === 'en') lastTargetLangCode = 'en-US';
+                        else if (targetLang === 'ko') lastTargetLangCode = 'ko-KR';
+
                         output.innerText = lastTranslatedText;
-                        speakText(lastTranslatedText, "ja-JP", lastDetectedGender);
+                        speakText(lastTranslatedText, lastTargetLangCode, lastDetectedGender);
                     } else {
-                        statusLabel.innerText = `偵測到：【日文 (${genderTag})】 ➔ 譯為繁體中文：`;
-                        lastTargetLang = "zh-TW";
+                        statusLabel.innerText = `偵測到：【外語 (${genderTag})】 ➔ 譯為繁體中文：`;
+                        lastTargetLangCode = "zh-TW";
                         output.innerText = lastTranslatedText;
                         speakText(lastTranslatedText, "zh-TW", lastDetectedGender);
                     }
@@ -256,9 +279,13 @@
     async function retranslateManual() {
         const API_KEY = document.getElementById("apiKey").value.trim();
         const selectedModel = document.getElementById("modelSelect").value;
+        const targetLang = document.getElementById("targetLangSelect").value;
         const modifiedOriginal = document.getElementById("originalText").value.trim();
         const statusLabel = document.getElementById("detectedLang");
         const output = document.getElementById("outputText");
+
+        const langNameMap = { ja: "日文", en: "美式英文", ko: "韓文" };
+        const selectedLangName = langNameMap[targetLang];
 
         if (!modifiedOriginal) {
             alert("原文框內沒有文字！");
@@ -269,9 +296,9 @@
 
         let promptText = "";
         if (lastDetectedLang === "zh") {
-            promptText = `請將以下中文內容翻譯成適合在日本旅遊日常使用的禮貌敬語（丁寧語）。請直接提供日文翻譯，不要包含任何中文解釋或引號：\n\n${modifiedOriginal}`;
+            promptText = `請將以下中文內容翻譯成適合日常旅遊使用的禮貌【${selectedLangName}】。請直接提供翻譯內容，不要包含中文解釋或引號：\n\n${modifiedOriginal}`;
         } else {
-            promptText = `請將以下日文內容翻譯成繁體中文。請直接提供中文翻譯，不要包含任何解釋或引號：\n\n${modifiedOriginal}`;
+            promptText = `請將以下內容翻譯成繁體中文。請直接提供中文翻譯，不要包含任何解釋或引號：\n\n${modifiedOriginal}`;
         }
 
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${API_KEY}`;
@@ -291,10 +318,15 @@
 
                 const genderTag = lastDetectedGender === "male" ? "👨 男聲" : "👩 女聲";
                 if (lastDetectedLang === "zh") {
-                    statusLabel.innerText = `修正後【中文 (${genderTag})】 ➔ 譯為日文：`;
-                    speakText(lastTranslatedText, "ja-JP", lastDetectedGender);
+                    statusLabel.innerText = `修正後【中文 (${genderTag})】 ➔ 譯為${selectedLangName}：`;
+                    if (targetLang === 'ja') lastTargetLangCode = 'ja-JP';
+                    else if (targetLang === 'en') lastTargetLangCode = 'en-US';
+                    else if (targetLang === 'ko') lastTargetLangCode = 'ko-KR';
+                    
+                    speakText(lastTranslatedText, lastTargetLangCode, lastDetectedGender);
                 } else {
-                    statusLabel.innerText = `修正後【日文 (${genderTag})】 ➔ 譯為繁體中文：`;
+                    statusLabel.innerText = `修正後【外語 (${genderTag})】 ➔ 譯為繁體中文：`;
+                    lastTargetLangCode = "zh-TW";
                     speakText(lastTranslatedText, "zh-TW", lastDetectedGender);
                 }
             } else {
@@ -308,7 +340,7 @@
     function resetMicBtn() {
         const micBtn = document.getElementById("micBtn");
         micBtn.classList.remove("recording");
-        micBtn.innerText = "🎤 按一下說話（中/日皆可）";
+        micBtn.innerText = "🎤 按一下說話（中文與外語皆可）";
     }
 
     function speakText(text, lang, gender) {
@@ -331,9 +363,9 @@
             if (!isLangMatch) return false;
 
             if (gender === 'male') {
-                return voiceName.includes('male') || voiceName.includes('男') || voiceName.includes('otoya') || voiceName.includes('hattori') || voiceName.includes('ichiro') || voiceName.includes('tairad');
+                return voiceName.includes('male') || voiceName.includes('男') || voiceName.includes('otoya') || voiceName.includes('david') || voiceName.includes('yuna') || voiceName.includes('minsu') || voiceName.includes('tairad');
             } else {
-                return voiceName.includes('female') || voiceName.includes('女') || voiceName.includes('kyoko') || voiceName.includes('o-ren') || voiceName.includes('sin-ji') || voiceName.includes('yuri');
+                return voiceName.includes('female') || voiceName.includes('女') || voiceName.includes('kyoko') || voiceName.includes('samantha') || voiceName.includes('zira') || voiceName.includes('yuna') || voiceName.includes('sunhi');
             }
         });
 
@@ -346,7 +378,7 @@
 
     function speakResult() {
         if (lastTranslatedText) {
-            speakText(lastTranslatedText, lastTargetLang, lastDetectedGender);
+            speakText(lastTranslatedText, lastTargetLangCode, lastDetectedGender);
         }
     }
 
