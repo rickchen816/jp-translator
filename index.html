@@ -46,7 +46,7 @@
         }
 
         .result-box { padding: 16px; background-color: #f8f9fa; border-radius: 14px; border: 1px solid #e5e5ea; min-height: 110px; margin-top: 10px; }
-        .detected-lang { font-size: 0.8rem; color: #007aff; font-weight: 600; margin-bottom: 4px; }
+        .detected-lang { font-size: 0.85rem; color: #007aff; font-weight: 600; margin-bottom: 6px; }
         .result-text { font-size: 1.25rem; font-weight: 500; color: #000000; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
         .action-btns { display: flex; gap: 10px; margin-top: 12px; }
         .btn-secondary { flex: 1; padding: 10px; background-color: #e5e5ea; color: #1c1c1e; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
@@ -64,17 +64,9 @@
     </div>
 
     <div class="form-group">
-        <label for="genderSelect">朗讀發音性別：</label>
-        <select id="genderSelect">
-            <option value="male">👨 男聲 (Male)</option>
-            <option value="female" selected>👩 女聲 (Female)</option>
-        </select>
-    </div>
-
-    <div class="form-group">
         <label for="modelSelect">模型選擇：</label>
         <select id="modelSelect">
-            <option value="gemini-3.6-flash">gemini-3.6-flash (多模態語音首選)</option>
+            <option value="gemini-3.6-flash">gemini-3.6-flash (推薦聲學辨識首選)</option>
             <option value="gemini-3.5-flash">gemini-3.5-flash</option>
             <option value="gemini-2.5-flash">gemini-2.5-flash</option>
         </select>
@@ -95,7 +87,7 @@
         <button class="btn-secondary" onclick="copyResult()">📋 複製結果</button>
     </div>
 
-    <div class="tip-info">💡 按一下開始錄音，講完再按一下結束，AI 會自動判定語言並發聲翻譯！</div>
+    <div class="tip-info">💡 按一下開始錄音，講完再按一下結束。AI 會自動辨識性別與語言並同步發音！</div>
 </div>
 
 <script>
@@ -104,6 +96,7 @@
     let isRecording = false;
     let lastTranslatedText = "";
     let lastTargetLang = "";
+    let lastDetectedGender = "female"; // 預設 female
     let systemVoices = [];
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -113,10 +106,6 @@
         const savedModel = localStorage.getItem("gemini_model");
         if (savedModel) document.getElementById("modelSelect").value = savedModel;
 
-        const savedGender = localStorage.getItem("voice_gender");
-        if (savedGender) document.getElementById("genderSelect").value = savedGender;
-
-        // 初始化載入系統語音檔
         loadVoices();
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = loadVoices;
@@ -157,7 +146,7 @@
         } else {
             isRecording = false;
             micBtn.classList.remove("recording");
-            micBtn.innerText = "⏳ AI 判斷並翻譯中...";
+            micBtn.innerText = "⏳ AI 聲學辨識與翻譯中...";
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
                 mediaRecorder.stop();
                 mediaRecorder.stream.getTracks().forEach(track => track.stop());
@@ -168,7 +157,6 @@
     async function processAudioTranslation(audioBlob) {
         const API_KEY = document.getElementById("apiKey").value.trim();
         const selectedModel = document.getElementById("modelSelect").value;
-        const selectedGender = document.getElementById("genderSelect").value;
         const statusLabel = document.getElementById("detectedLang");
         const output = document.getElementById("outputText");
 
@@ -180,18 +168,20 @@
 
         localStorage.setItem("gemini_api_key", API_KEY);
         localStorage.setItem("gemini_model", selectedModel);
-        localStorage.setItem("voice_gender", selectedGender);
 
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
             const base64Audio = reader.result.split(',')[1];
 
-            const promptText = `你是一個專業的中日雙向即時翻譯官。請聽這段語音音訊：
-1. 如果說話者使用的是【中文】：請將其翻譯成適合日本旅遊使用的禮貌敬語【日文】（丁寧語）。
-2. 如果說話者使用的是【日文】：請將其翻譯成【繁體中文】。
-3. 請嚴格按照以下 JSON 格式回答，不要加上任何 Markdown 標籤或額外文字：
-{"detected": "zh", "translation": "翻譯後的文字"}`;
+            // Prompt 強制要求 AI 分析音訊頻率判斷性別 (male/female)
+            const promptText = `你是一個專業的中日雙向即時翻譯官，並且具備聲學辨識能力。請仔細聽這段語音音訊：
+1. 【性別辨識】：分析說話者的音色與頻率，判斷說話者是男性("male")還是女性("female")。
+2. 【語言與翻譯】：
+   - 如果說話者講的是【中文】：翻譯成適合日本旅遊使用的禮貌敬語【日文】（丁寧語）。
+   - 如果說話者講的是【日文】：翻譯成【繁體中文】。
+3. 請嚴格按照以下 JSON 格式回答，不要加任何 Markdown 標記或引號：
+{"gender": "male", "detected": "zh", "translation": "翻譯後的內容"}`;
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${API_KEY}`;
 
@@ -219,17 +209,20 @@
 
                     const parsed = JSON.parse(rawText);
                     lastTranslatedText = parsed.translation;
+                    lastDetectedGender = parsed.gender; // "male" 或 "female"
+
+                    const genderTag = lastDetectedGender === "male" ? "👨 男聲" : "👩 女聲";
 
                     if (parsed.detected === "zh") {
-                        statusLabel.innerText = "偵測到【中文】 ➔ 已譯為日文（自動發音）：";
+                        statusLabel.innerText = `偵測到：【中文 (${genderTag})】 ➔ 譯為日文：`;
                         lastTargetLang = "ja-JP";
                         output.innerText = lastTranslatedText;
-                        speakText(lastTranslatedText, "ja-JP");
+                        speakText(lastTranslatedText, "ja-JP", lastDetectedGender);
                     } else {
-                        statusLabel.innerText = "偵測到【日文】 ➔ 已譯為繁體中文（自動發音）：";
+                        statusLabel.innerText = `偵測到：【日文 (${genderTag})】 ➔ 譯為繁體中文：`;
                         lastTargetLang = "zh-TW";
                         output.innerText = lastTranslatedText;
-                        speakText(lastTranslatedText, "zh-TW");
+                        speakText(lastTranslatedText, "zh-TW", lastDetectedGender);
                     }
                 } else {
                     output.innerText = "翻譯失敗：" + (data.error ? data.error.message : "無法辨識語音內容。");
@@ -248,8 +241,8 @@
         micBtn.innerText = "🎤 按一下說話（中/日皆可）";
     }
 
-    // 🔊 智慧選擇男聲 / 女聲朗讀
-    function speakText(text, lang) {
+    // 🔊 根據 AI 偵測到的性別 (male / female) 選擇最佳語音庫
+    function speakText(text, lang, gender) {
         if (!text) return;
         window.speechSynthesis.cancel();
 
@@ -257,9 +250,6 @@
         utterance.lang = lang;
         utterance.rate = 0.9;
 
-        const targetGender = document.getElementById("genderSelect").value; // male 或 female
-
-        // 搜尋手機系統內對應語言與性別的 Voice
         if (systemVoices.length === 0) {
             systemVoices = window.speechSynthesis.getVoices();
         }
@@ -268,14 +258,13 @@
         const matchedVoice = systemVoices.find(voice => {
             const isLangMatch = voice.lang.toLowerCase().replace('_', '-').startsWith(langPrefix);
             const voiceName = voice.name.toLowerCase();
-            
+
             if (!isLangMatch) return false;
 
-            // 根據語音庫名稱中的關鍵字過濾性別
-            if (targetGender === 'male') {
-                return voiceName.includes('male') || voiceName.includes('男') || voiceName.includes('otoya') || voiceName.includes('hattori') || voiceName.includes('ichiro');
+            if (gender === 'male') {
+                return voiceName.includes('male') || voiceName.includes('男') || voiceName.includes('otoya') || voiceName.includes('hattori') || voiceName.includes('ichiro') || voiceName.includes('tairad');
             } else {
-                return voiceName.includes('female') || voiceName.includes('女') || voiceName.includes('kyoko') || voiceName.includes('o-ren') || voiceName.includes('sin-ji');
+                return voiceName.includes('female') || voiceName.includes('女') || voiceName.includes('kyoko') || voiceName.includes('o-ren') || voiceName.includes('sin-ji') || voiceName.includes('yuri');
             }
         });
 
@@ -288,7 +277,7 @@
 
     function speakResult() {
         if (lastTranslatedText) {
-            speakText(lastTranslatedText, lastTargetLang);
+            speakText(lastTranslatedText, lastTargetLang, lastDetectedGender);
         }
     }
 
