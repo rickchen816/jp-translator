@@ -96,7 +96,7 @@
         <button class="btn-secondary" onclick="copyResult()">📋 複製結果</button>
     </div>
 
-    <div class="tip-info">💡 已修正備援模型為 gemini-3.5-flash，限流時自動無縫接手！</div>
+    <div class="tip-info">💡 已增強性別聲調辨識：男聲自動調低音調、女聲維持自然清亮。</div>
 </div>
 
 <script>
@@ -126,7 +126,6 @@
         systemVoices = window.speechSynthesis.getVoices();
     }
 
-    // 正確修復：採用 gemini-3.5-flash 作為唯一備援模型
     async function fetchGeminiWithFallback(apiKey, primaryModel, requestBody) {
         const fallbackModels = [primaryModel, "gemini-3.5-flash"].filter((v, i, a) => a.indexOf(v) === i);
         
@@ -225,10 +224,10 @@
             const mimeType = audioBlob.type || "audio/webm";
 
             const promptText = `語音中日翻譯任務：
-1. 判斷性別("male"/"female")
-2. 轉寫內容("original")
+1. 判斷說話者性別是男還是女，必須輸出 "male" 或 "female"
+2. 轉寫原文 ("original")
 3. 翻譯：中文 ➔ 禮貌日文(丁寧語)；日文 ➔ 繁體中文
-JSON格式：{"gender":"male","detected":"zh","original":"..","translation":".."}`;
+請僅輸出 JSON，格式：{"gender":"male","detected":"zh","original":"..","translation":".."}`;
 
             const requestBody = {
                 contents: [{
@@ -247,7 +246,7 @@ JSON格式：{"gender":"male","detected":"zh","original":"..","translation":".."
 
                 const parsed = JSON.parse(rawText);
                 lastTranslatedText = parsed.translation;
-                lastDetectedGender = parsed.gender; 
+                lastDetectedGender = parsed.gender || "female"; 
                 lastDetectedLang = parsed.detected;
 
                 originalInput.value = parsed.original;
@@ -321,19 +320,30 @@ JSON格式：{"gender":"male","detected":"zh","original":"..","translation":".."
         micBtn.innerText = "🎤 按一下說話（中/日皆可）";
     }
 
+    // 🔊 結合性別關鍵字與 Pitch 音高控制
     function speakText(text, lang, gender) {
         if (!text) return;
         window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
-        utterance.rate = 0.9;
+
+        // 🎯 關鍵改動：透過 Pitch 控制男音/女音音高
+        if (gender === 'male') {
+            utterance.pitch = 0.75; // 音高降低（男聲低沉）
+            utterance.rate = 0.85;  // 語速稍慢
+        } else {
+            utterance.pitch = 1.1;  // 音高正常微高（女聲自然）
+            utterance.rate = 0.9;   // 正常語速
+        }
 
         if (systemVoices.length === 0) {
             systemVoices = window.speechSynthesis.getVoices();
         }
 
         const langPrefix = lang.split('-')[0]; 
+        
+        // 優先找尋性別專屬語音包，找不到則用預設聲音配合 pitch 調音
         const matchedVoice = systemVoices.find(voice => {
             const isLangMatch = voice.lang.toLowerCase().replace('_', '-').startsWith(langPrefix);
             const voiceName = voice.name.toLowerCase();
