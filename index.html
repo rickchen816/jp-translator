@@ -8,39 +8,33 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f2f2f7; color: #1c1c1e; padding: 16px; display: flex; justify-content: center; }
         .card { width: 100%; max-width: 480px; background: #ffffff; border-radius: 20px; padding: 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); }
-        h2 { font-size: 1.4rem; text-align: center; margin-bottom: 16px; color: #2c3e50; }
+        h2 { font-size: 1.4rem; text-align: center; margin-bottom: 14px; color: #2c3e50; }
         .form-group { margin-bottom: 12px; }
         label { font-size: 0.85rem; font-weight: 600; color: #6c757d; margin-bottom: 4px; display: block; }
         input[type="password"], select, textarea { width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 12px; font-size: 1rem; outline: none; background: #fff; }
-        textarea { height: 80px; resize: none; margin-bottom: 8px; }
+        textarea { height: 90px; resize: none; margin-bottom: 12px; }
         
-        /* 語音按鈕樣式 */
-        .voice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-        .btn-mic { padding: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; gap: 6px; }
-        .btn-mic-zh { background-color: #007aff; }
-        .btn-mic-ja { background-color: #ff9500; }
-        .btn-mic.recording { animation: pulse 1.2s infinite; background-color: #ff3b30; }
+        .translate-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .btn-mode { padding: 12px; border: 2px solid #e5e5ea; border-radius: 12px; background: #f8f9fa; font-size: 0.95rem; font-weight: 600; cursor: pointer; color: #3a3a3c; text-align: center; }
+        .btn-mode.active-mode { border-color: #007aff; background-color: #e5f1ff; color: #007aff; }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        .result-box { margin-top: 16px; padding: 16px; background-color: #f8f9fa; border-radius: 12px; border: 1px solid #e5e5ea; min-height: 90px; }
+        .btn-translate { width: 100%; padding: 14px; background-color: #007aff; color: white; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: bold; cursor: pointer; margin-bottom: 16px; }
+        
+        .result-box { padding: 16px; background-color: #f8f9fa; border-radius: 12px; border: 1px solid #e5e5ea; min-height: 90px; }
         .result-text { font-size: 1.2rem; font-weight: 500; color: #000000; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
         .action-btns { display: flex; gap: 10px; margin-top: 12px; }
         .btn-secondary { flex: 1; padding: 10px; background-color: #e5e5ea; color: #1c1c1e; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+        .tip-info { font-size: 0.8rem; color: #8e8e93; margin-top: 6px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>🇯🇵 雙向語音日文翻譯官</h2>
+    <h2>🇯🇵 雙向日文翻譯官</h2>
 
     <div class="form-group">
         <label for="apiKey">Gemini API Key：</label>
-        <input type="password" id="apiKey" placeholder="貼上 API Key">
+        <input type="password" id="apiKey" placeholder="請貼上 API Key (AQ...)">
     </div>
 
     <div class="form-group">
@@ -52,30 +46,32 @@
         </select>
     </div>
 
-    <!-- 語音對講按鈕區域 -->
-    <div class="voice-grid">
-        <button class="btn-mic btn-mic-zh" id="btnZh" onclick="startSpeech('zh-TW')">🎤 我說中文</button>
-        <button class="btn-mic btn-mic-ja" id="btnJa" onclick="startSpeech('ja-JP')">🎙️ 店家說日文</button>
+    <!-- 翻譯方向選擇 -->
+    <label>選擇翻譯方向：</label>
+    <div class="translate-mode-grid">
+        <div class="btn-mode active-mode" id="modeZhToJa" onclick="setMode('zh2ja')">🇹🇼 中文 ➔ 🇯🇵 日文</div>
+        <div class="btn-mode" id="modeJaToZh" onclick="setMode('ja2zh')">🇯🇵 日文 ➔ 🇹🇼 中文</div>
     </div>
 
-    <textarea id="inputText" placeholder="也可手動輸入文字..."></textarea>
+    <textarea id="inputText" placeholder="點擊這裡，按鍵盤右下角 🎤 麥克風進行語音輸入..."></textarea>
 
-    <button class="btn-secondary" style="width:100%; margin-bottom:12px; background:#007aff; color:white;" onclick="manualTranslate()">手動翻譯成日文</button>
+    <button class="btn-translate" onclick="runTranslation()" id="submitBtn">開始 AI 翻譯</button>
 
     <div class="result-box">
-        <label id="resultLabel">翻譯結果：</label>
-        <div class="result-text" id="outputText">請點擊上方語音按鈕開始對話...</div>
+        <label id="resultLabel">日文翻譯（自動朗讀）：</label>
+        <div class="result-text" id="outputText">等待輸入中...</div>
     </div>
 
     <div class="action-btns">
         <button class="btn-secondary" onclick="speakText()">🔊 朗讀結果</button>
         <button class="btn-secondary" onclick="copyResult()">📋 複製結果</button>
     </div>
+
+    <div class="tip-info">💡 提示：輸入完成後點擊「開始 AI 翻譯」，若為中文➔日文會自動播放語音。</div>
 </div>
 
 <script>
-    let currentTargetLang = "ja"; // 預設翻譯目標語言：ja(日文) 或 zh(中文)
-    let recognition = null;
+    let currentMode = "zh2ja"; // 預設模式：中文轉日文
 
     document.addEventListener("DOMContentLoaded", () => {
         const savedKey = localStorage.getItem("gemini_api_key");
@@ -83,90 +79,56 @@
 
         const savedModel = localStorage.getItem("gemini_model");
         if (savedModel) document.getElementById("modelSelect").value = savedModel;
-
-        // 初始化語音辨識 API
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-
-            recognition.onresult = (event) => {
-                const text = event.results[0][0].transcript;
-                document.getElementById("inputText").value = text;
-                // 辨識完畢後自動觸發 AI 翻譯
-                processTranslation(text, currentTargetLang);
-            };
-
-            recognition.onerror = (event) => {
-                resetMicButtons();
-                alert("語音辨識發生錯誤：" + event.error);
-            };
-
-            recognition.onend = () => {
-                resetMicButtons();
-            };
-        } else {
-            alert("您的瀏覽器不支援原生語音輸入，請使用 Safari 或 Chrome！");
-        }
     });
 
-    // 開始語音辨識
-    function startSpeech(langCode) {
-        if (!recognition) return;
+    function setMode(mode) {
+        currentMode = mode;
+        const btnZh = document.getElementById("modeZhToJa");
+        const btnJa = document.getElementById("modeJaToZh");
+        const input = document.getElementById("inputText");
+        const label = document.getElementById("resultLabel");
 
-        const btnZh = document.getElementById("btnZh");
-        const btnJa = document.getElementById("btnJa");
-
-        resetMicButtons();
-
-        if (langCode === 'zh-TW') {
-            currentTargetLang = 'ja'; // 說中文 ➔ 譯成日文
-            btnZh.classList.add("recording");
-            btnZh.innerText = "🔴 聆聽中文中...";
+        if (mode === 'zh2ja') {
+            btnZh.classList.add("active-mode");
+            btnJa.classList.remove("active-mode");
+            input.placeholder = "請輸入或用中文聽寫：例如「請問這多少錢？」";
+            label.innerText = "日文翻譯（會自動發音）：";
         } else {
-            currentTargetLang = 'zh'; // 說日文 ➔ 譯成中文
-            btnJa.classList.add("recording");
-            btnJa.innerText = "🔴 聆聽日文中...";
+            btnJa.classList.add("active-mode");
+            btnZh.classList.remove("active-mode");
+            input.placeholder = "請讓店家用日文聽寫，或輸入日文...";
+            label.innerText = "中文翻譯（理解店家意思）：";
         }
-
-        recognition.lang = langCode;
-        recognition.start();
     }
 
-    function resetMicButtons() {
-        const btnZh = document.getElementById("btnZh");
-        const btnJa = document.getElementById("btnJa");
-        btnZh.classList.remove("recording");
-        btnJa.classList.remove("recording");
-        btnZh.innerText = "🎤 我說中文";
-        btnJa.innerText = "🎙️ 店家說日文";
-    }
-
-    // 呼叫 Gemini 進行翻譯
-    async function processTranslation(inputText, targetLang) {
+    async function runTranslation() {
         const API_KEY = document.getElementById("apiKey").value.trim();
         const selectedModel = document.getElementById("modelSelect").value;
+        const input = document.getElementById("inputText").value.trim();
         const output = document.getElementById("outputText");
-        const label = document.getElementById("resultLabel");
+        const btn = document.getElementById("submitBtn");
 
         if (!API_KEY) {
             alert("請先貼上 API Key！");
             return;
         }
 
+        if (!input) {
+            alert("請先輸入或語音輸入文字！");
+            return;
+        }
+
         localStorage.setItem("gemini_api_key", API_KEY);
         localStorage.setItem("gemini_model", selectedModel);
 
-        output.innerText = "AI 翻譯中...";
+        output.innerText = "翻譯中...";
+        btn.disabled = true;
 
         let prompt = "";
-        if (targetLang === 'ja') {
-            label.innerText = "日文翻譯（對店員播放/展示）：";
-            prompt = `請將以下中文翻譯成適合日本旅遊使用的禮貌敬語（丁寧語）。請直接提供日文翻譯，不要加任何解釋或引號：\n\n${inputText}`;
+        if (currentMode === 'zh2ja') {
+            prompt = `請將以下中文翻譯成適合在日本旅遊日常使用的禮貌敬語（丁寧語）。請直接提供日文翻譯，不要加任何中文解釋、注音或引號：\n\n${input}`;
         } else {
-            label.innerText = "中文翻譯（理解店員意思）：";
-            prompt = `請將以下日文翻譯成繁體中文。請直接提供中文翻譯，不要加任何解釋或引號：\n\n${inputText}`;
+            prompt = `請將以下日文翻譯成繁體中文。請直接提供中文翻譯，不要加任何解釋或引號：\n\n${input}`;
         }
 
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${API_KEY}`;
@@ -181,34 +143,30 @@
             const data = await response.json();
 
             if (response.ok && data.candidates && data.candidates[0].content && data.candidates[0].content.parts[0].text) {
-                const translatedResult = data.candidates[0].content.parts[0].text.trim();
-                output.innerText = translatedResult;
+                const resultText = data.candidates[0].content.parts[0].text.trim();
+                output.innerText = resultText;
 
-                // 如果是翻譯成日文，自動語音發音給店家聽
-                if (targetLang === 'ja') {
-                    speakText(translatedResult, 'ja-JP');
+                // 如果是翻譯成日文，自動語音朗讀
+                if (currentMode === 'zh2ja') {
+                    speakText(resultText, 'ja-JP');
                 }
             } else {
-                output.innerText = "翻譯失敗：" + (data.error ? data.error.message : "未知錯誤");
+                output.innerText = "翻譯失敗：" + (data.error ? data.error.message : "請檢查網路與 API Key。");
             }
         } catch (error) {
             output.innerText = "連線失敗：" + error.message;
+        } finally {
+            btn.disabled = false;
         }
     }
 
-    function manualTranslate() {
-        const input = document.getElementById("inputText").value.trim();
-        if (input) processTranslation(input, 'ja');
-    }
-
-    // 語音朗讀功能
     function speakText(customText = null, lang = null) {
         const text = customText || document.getElementById("outputText").innerText;
         if (!text || text.includes("中...") || text.includes("失敗")) return;
 
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang || (currentTargetLang === 'ja' ? 'ja-JP' : 'zh-TW');
+        utterance.lang = lang || (currentMode === 'zh2ja' ? 'ja-JP' : 'zh-TW');
         utterance.rate = 0.9;
         window.speechSynthesis.speak(utterance);
     }
@@ -216,7 +174,7 @@
     function copyResult() {
         const text = document.getElementById("outputText").innerText;
         if (!text || text.includes("中...")) return;
-        navigator.clipboard.writeText(text).then(() => alert("已複製！"));
+        navigator.clipboard.writeText(text).then(() => alert("已複製翻譯結果！"));
     }
 </script>
 
