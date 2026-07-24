@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>雙向語音日文翻譯官</title>
+    <title>極速雙向日文翻譯官</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f2f2f7; color: #1c1c1e; padding: 16px; display: flex; justify-content: center; }
@@ -11,67 +11,91 @@
         h2 { font-size: 1.4rem; text-align: center; margin-bottom: 14px; color: #2c3e50; }
         .form-group { margin-bottom: 12px; }
         label { font-size: 0.85rem; font-weight: 600; color: #6c757d; margin-bottom: 4px; display: block; }
-        input[type="password"], select, textarea { width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 12px; font-size: 1rem; outline: none; background: #fff; }
-        textarea { height: 90px; resize: none; margin-bottom: 12px; }
+        input[type="password"], select { width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 12px; font-size: 1rem; outline: none; background: #fff; }
         
-        .translate-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-        .btn-mode { padding: 12px; border: 2px solid #e5e5ea; border-radius: 12px; background: #f8f9fa; font-size: 0.95rem; font-weight: 600; cursor: pointer; color: #3a3a3c; text-align: center; }
-        .btn-mode.active-mode { border-color: #007aff; background-color: #e5f1ff; color: #007aff; }
+        /* 超大一鍵對講按鈕 */
+        .btn-smart-mic {
+            width: 100%;
+            height: 90px;
+            margin: 16px 0;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #007aff, #5856d6);
+            color: white;
+            font-size: 1.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(0, 122, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
 
-        .btn-translate { width: 100%; padding: 14px; background-color: #007aff; color: white; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: bold; cursor: pointer; margin-bottom: 16px; }
-        
-        .result-box { padding: 16px; background-color: #f8f9fa; border-radius: 12px; border: 1px solid #e5e5ea; min-height: 90px; }
-        .result-text { font-size: 1.2rem; font-weight: 500; color: #000000; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+        .btn-smart-mic.recording {
+            background: linear-gradient(135deg, #ff3b30, #ff9500);
+            animation: pulse 1.2s infinite;
+            box-shadow: 0 6px 16px rgba(255, 59, 48, 0.4);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.98); }
+            100% { transform: scale(1); }
+        }
+
+        .result-box { padding: 16px; background-color: #f8f9fa; border-radius: 14px; border: 1px solid #e5e5ea; min-height: 110px; margin-top: 10px; }
+        .detected-lang { font-size: 0.8rem; color: #007aff; font-weight: 600; margin-bottom: 4px; }
+        .result-text { font-size: 1.25rem; font-weight: 500; color: #000000; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
         .action-btns { display: flex; gap: 10px; margin-top: 12px; }
         .btn-secondary { flex: 1; padding: 10px; background-color: #e5e5ea; color: #1c1c1e; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
-        .tip-info { font-size: 0.8rem; color: #8e8e93; margin-top: 6px; text-align: center; }
+        .tip-info { font-size: 0.8rem; color: #8e8e93; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>🇯🇵 雙向日文翻譯官</h2>
+    <h2>⚡ 智慧雙向對講翻譯官</h2>
 
     <div class="form-group">
         <label for="apiKey">Gemini API Key：</label>
-        <input type="password" id="apiKey" placeholder="請貼上 API Key (AQ...)">
+        <input type="password" id="apiKey" placeholder="貼上 API Key (AQ...)">
     </div>
 
     <div class="form-group">
         <label for="modelSelect">模型選擇：</label>
         <select id="modelSelect">
-            <option value="gemini-3.6-flash">gemini-3.6-flash</option>
+            <option value="gemini-3.6-flash">gemini-3.6-flash (多模態語音首選)</option>
             <option value="gemini-3.5-flash">gemini-3.5-flash</option>
             <option value="gemini-2.5-flash">gemini-2.5-flash</option>
         </select>
     </div>
 
-    <!-- 翻譯方向選擇 -->
-    <label>選擇翻譯方向：</label>
-    <div class="translate-mode-grid">
-        <div class="btn-mode active-mode" id="modeZhToJa" onclick="setMode('zh2ja')">🇹🇼 中文 ➔ 🇯🇵 日文</div>
-        <div class="btn-mode" id="modeJaToZh" onclick="setMode('ja2zh')">🇯🇵 日文 ➔ 🇹🇼 中文</div>
-    </div>
-
-    <textarea id="inputText" placeholder="點擊這裡，按鍵盤右下角 🎤 麥克風進行語音輸入..."></textarea>
-
-    <button class="btn-translate" onclick="runTranslation()" id="submitBtn">開始 AI 翻譯</button>
+    <!-- 智慧對講按鈕 -->
+    <button class="btn-smart-mic" id="micBtn" onclick="toggleRecording()">
+        🎤 按一下說話（中/日皆可）
+    </button>
 
     <div class="result-box">
-        <label id="resultLabel">日文翻譯（自動朗讀）：</label>
-        <div class="result-text" id="outputText">等待輸入中...</div>
+        <div class="detected-lang" id="detectedLang">對話狀態：準備就緒</div>
+        <div class="result-text" id="outputText">請按上方按鈕開始錄音...</div>
     </div>
 
     <div class="action-btns">
-        <button class="btn-secondary" onclick="speakText()">🔊 朗讀結果</button>
+        <button class="btn-secondary" onclick="speakResult()">🔊 重播語音</button>
         <button class="btn-secondary" onclick="copyResult()">📋 複製結果</button>
     </div>
 
-    <div class="tip-info">💡 提示：輸入完成後點擊「開始 AI 翻譯」，若為中文➔日文會自動播放語音。</div>
+    <div class="tip-info">💡 按一下開始錄音，講完再按一下結束，AI 會自動判定語言並雙向翻譯！</div>
 </div>
 
 <script>
-    let currentMode = "zh2ja"; // 預設模式：中文轉日文
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let lastTranslatedText = "";
+    let lastTargetLang = "";
 
     document.addEventListener("DOMContentLoaded", () => {
         const savedKey = localStorage.getItem("gemini_api_key");
@@ -81,100 +105,148 @@
         if (savedModel) document.getElementById("modelSelect").value = savedModel;
     });
 
-    function setMode(mode) {
-        currentMode = mode;
-        const btnZh = document.getElementById("modeZhToJa");
-        const btnJa = document.getElementById("modeJaToZh");
-        const input = document.getElementById("inputText");
-        const label = document.getElementById("resultLabel");
+    async function toggleRecording() {
+        const micBtn = document.getElementById("micBtn");
 
-        if (mode === 'zh2ja') {
-            btnZh.classList.add("active-mode");
-            btnJa.classList.remove("active-mode");
-            input.placeholder = "請輸入或用中文聽寫：例如「請問這多少錢？」";
-            label.innerText = "日文翻譯（會自動發音）：";
+        if (!isRecording) {
+            // 開始錄音
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    await processAudioTranslation(audioBlob);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                micBtn.classList.add("recording");
+                micBtn.innerText = "🛑 正在聆聽...（講完再按一下）";
+                document.getElementById("detectedLang").innerText = "錄音中...";
+                document.getElementById("outputText").innerText = "正在錄下對話...";
+            } catch (err) {
+                alert("無法存取麥克風，請確保已允許存取麥克風權限！錯誤：" + err.message);
+            }
         } else {
-            btnJa.classList.add("active-mode");
-            btnZh.classList.remove("active-mode");
-            input.placeholder = "請讓店家用日文聽寫，或輸入日文...";
-            label.innerText = "中文翻譯（理解店家意思）：";
+            // 結束錄音
+            isRecording = false;
+            micBtn.classList.remove("recording");
+            micBtn.innerText = "⏳ AI 判斷並翻譯中...";
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
         }
     }
 
-    async function runTranslation() {
+    async function processAudioTranslation(audioBlob) {
         const API_KEY = document.getElementById("apiKey").value.trim();
         const selectedModel = document.getElementById("modelSelect").value;
-        const input = document.getElementById("inputText").value.trim();
+        const micBtn = document.getElementById("micBtn");
+        const statusLabel = document.getElementById("detectedLang");
         const output = document.getElementById("outputText");
-        const btn = document.getElementById("submitBtn");
 
         if (!API_KEY) {
             alert("請先貼上 API Key！");
-            return;
-        }
-
-        if (!input) {
-            alert("請先輸入或語音輸入文字！");
+            resetMicBtn();
             return;
         }
 
         localStorage.setItem("gemini_api_key", API_KEY);
         localStorage.setItem("gemini_model", selectedModel);
 
-        output.innerText = "翻譯中...";
-        btn.disabled = true;
+        // 將語音檔轉成 Base64
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+            const base64Audio = reader.result.split(',')[1];
 
-        let prompt = "";
-        if (currentMode === 'zh2ja') {
-            prompt = `請將以下中文翻譯成適合在日本旅遊日常使用的禮貌敬語（丁寧語）。請直接提供日文翻譯，不要加任何中文解釋、注音或引號：\n\n${input}`;
-        } else {
-            prompt = `請將以下日文翻譯成繁體中文。請直接提供中文翻譯，不要加任何解釋或引號：\n\n${input}`;
-        }
+            const promptText = `你是一個專業的中日雙向即時翻譯官。請聽這段語音音訊：
+1. 如果說話者使用的是【中文】：請將其翻譯成適合日本旅遊使用的禮貌敬語【日文】（丁寧語）。
+2. 如果說話者使用的是【日文】：請將其翻譯成【繁體中文】。
+3. 請嚴格按照以下 JSON 格式回答，不要加上任何 Markdown 標籤或額外文字：
+{"detected": "zh", "translation": "翻譯後的文字"}`;
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${API_KEY}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${API_KEY}`;
 
-        try {
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
+            const requestBody = {
+                contents: [{
+                    parts: [
+                        { inline_data: { mime_type: "audio/webm", data: base64Audio } },
+                        { text: promptText }
+                    ]
+                }]
+            };
 
-            const data = await response.json();
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(requestBody)
+                });
 
-            if (response.ok && data.candidates && data.candidates[0].content && data.candidates[0].content.parts[0].text) {
-                const resultText = data.candidates[0].content.parts[0].text.trim();
-                output.innerText = resultText;
+                const data = await response.json();
 
-                // 如果是翻譯成日文，自動語音朗讀
-                if (currentMode === 'zh2ja') {
-                    speakText(resultText, 'ja-JP');
+                if (response.ok && data.candidates && data.candidates[0].content && data.candidates[0].content.parts[0].text) {
+                    let rawText = data.candidates[0].content.parts[0].text.trim();
+                    // 清理可能包含的 Markdown JSON 標記
+                    rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+
+                    const parsed = JSON.parse(rawText);
+                    lastTranslatedText = parsed.translation;
+
+                    if (parsed.detected === "zh") {
+                        statusLabel.innerText = "偵測到【中文】 ➔ 已譯為日文（自動發音）：";
+                        lastTargetLang = "ja-JP";
+                        output.innerText = lastTranslatedText;
+                        speakText(lastTranslatedText, "ja-JP"); // 聽到中文自動朗讀日文給店家聽
+                    } else {
+                        statusLabel.innerText = "偵測到【日文】 ➔ 已譯為繁體中文：";
+                        lastTargetLang = "zh-TW";
+                        output.innerText = lastTranslatedText;
+                    }
+                } else {
+                    output.innerText = "翻譯失敗：" + (data.error ? data.error.message : "無法辨識語音內容。");
                 }
-            } else {
-                output.innerText = "翻譯失敗：" + (data.error ? data.error.message : "請檢查網路與 API Key。");
+            } catch (error) {
+                output.innerText = "解析失敗：" + error.message;
+            } finally {
+                resetMicBtn();
             }
-        } catch (error) {
-            output.innerText = "連線失敗：" + error.message;
-        } finally {
-            btn.disabled = false;
-        }
+        };
     }
 
-    function speakText(customText = null, lang = null) {
-        const text = customText || document.getElementById("outputText").innerText;
-        if (!text || text.includes("中...") || text.includes("失敗")) return;
+    function resetMicBtn() {
+        const micBtn = document.getElementById("micBtn");
+        micBtn.classList.remove("recording");
+        micBtn.innerText = "🎤 按一下說話（中/日皆可）";
+    }
 
+    function speakText(text, lang) {
+        if (!text) return;
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang || (currentMode === 'zh2ja' ? 'ja-JP' : 'zh-TW');
+        utterance.lang = lang;
         utterance.rate = 0.9;
         window.speechSynthesis.speak(utterance);
     }
 
+    function speakResult() {
+        if (lastTranslatedText) {
+            speakText(lastTranslatedText, lastTargetLang);
+        }
+    }
+
     function copyResult() {
-        const text = document.getElementById("outputText").innerText;
-        if (!text || text.includes("中...")) return;
-        navigator.clipboard.writeText(text).then(() => alert("已複製翻譯結果！"));
+        if (lastTranslatedText) {
+            navigator.clipboard.writeText(lastTranslatedText).then(() => alert("已複製！"));
+        }
     }
 </script>
 
