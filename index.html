@@ -96,7 +96,7 @@
         <button class="btn-secondary" onclick="copyResult()">📋 複製結果</button>
     </div>
 
-    <div class="tip-info">💡 已增強性別聲調辨識：男聲自動調低音調、女聲維持自然清亮。</div>
+    <div class="tip-info">🎯 已提升採樣率與降噪處理，大幅優化辨識精準度與聲音諧音判定。</div>
 </div>
 
 <script>
@@ -162,14 +162,16 @@
 
         if (!isRecording) {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 16000 } });
+                // 恢復高畫質音質與原生降噪功能，大幅提升 AI 聽講辨識率
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { 
+                        echoCancellation: true, 
+                        noiseSuppression: true, 
+                        autoGainControl: true 
+                    } 
+                });
                 
-                let options = { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 16000 };
-                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                    options = { audioBitsPerSecond: 16000 };
-                }
-
-                mediaRecorder = new MediaRecorder(stream, options);
+                mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
 
                 mediaRecorder.ondataavailable = (event) => {
@@ -193,7 +195,7 @@
         } else {
             isRecording = false;
             micBtn.classList.remove("recording");
-            micBtn.innerText = "⏳ 辨識中...";
+            micBtn.innerText = "⏳ 高精準辨識與翻譯中...";
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
                 mediaRecorder.stop();
                 mediaRecorder.stream.getTracks().forEach(track => track.stop());
@@ -223,11 +225,14 @@
             const base64Audio = reader.result.split(',')[1];
             const mimeType = audioBlob.type || "audio/webm";
 
-            const promptText = `語音中日翻譯任務：
-1. 判斷說話者性別是男還是女，必須輸出 "male" 或 "female"
-2. 轉寫原文 ("original")
-3. 翻譯：中文 ➔ 禮貌日文(丁寧語)；日文 ➔ 繁體中文
-請僅輸出 JSON，格式：{"gender":"male","detected":"zh","original":"..","translation":".."}`;
+            // 結構化清晰指示，大幅減少 AI 的辨識誤差
+            const promptText = `請扮演專業的中日雙向即時翻譯官，聽取音訊並完成任務：
+1. 【性別辨識】：判斷說話者是 "male" 還是 "female"。
+2. 【文字轉寫】：完整精準轉寫聽到的語音為文字，填入 "original"。
+3. 【翻譯方向】：
+   - 若說話者講的是中文，翻譯為禮貌日文（丁寧語）。
+   - 若說話者講的是日文，翻譯為繁體中文。
+請嚴格僅輸出 JSON 格式：{"gender":"male","detected":"zh","original":"聽到的內容","translation":"翻譯結果"}`;
 
             const requestBody = {
                 contents: [{
@@ -320,7 +325,6 @@
         micBtn.innerText = "🎤 按一下說話（中/日皆可）";
     }
 
-    // 🔊 結合性別關鍵字與 Pitch 音高控制
     function speakText(text, lang, gender) {
         if (!text) return;
         window.speechSynthesis.cancel();
@@ -328,13 +332,12 @@
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
 
-        // 🎯 關鍵改動：透過 Pitch 控制男音/女音音高
         if (gender === 'male') {
-            utterance.pitch = 0.75; // 音高降低（男聲低沉）
-            utterance.rate = 0.85;  // 語速稍慢
+            utterance.pitch = 0.75;
+            utterance.rate = 0.85;
         } else {
-            utterance.pitch = 1.1;  // 音高正常微高（女聲自然）
-            utterance.rate = 0.9;   // 正常語速
+            utterance.pitch = 1.1;
+            utterance.rate = 0.9;
         }
 
         if (systemVoices.length === 0) {
@@ -342,8 +345,6 @@
         }
 
         const langPrefix = lang.split('-')[0]; 
-        
-        // 優先找尋性別專屬語音包，找不到則用預設聲音配合 pitch 調音
         const matchedVoice = systemVoices.find(voice => {
             const isLangMatch = voice.lang.toLowerCase().replace('_', '-').startsWith(langPrefix);
             const voiceName = voice.name.toLowerCase();
