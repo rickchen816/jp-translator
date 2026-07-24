@@ -30,7 +30,7 @@
 
     <div class="api-key-group">
         <label for="apiKey">Gemini API Key：</label>
-        <input type="password" id="apiKey" placeholder="請貼上你的 API Key (AQ...)">
+        <input type="password" id="apiKey" placeholder="請貼上你的 API Key">
     </div>
 
     <textarea id="inputText" placeholder="請輸入中文...（例如：請問這附近有超商嗎？）"></textarea>
@@ -49,7 +49,6 @@
 </div>
 
 <script>
-    // 自動載入手機上記住的 Key
     document.addEventListener("DOMContentLoaded", () => {
         const savedKey = localStorage.getItem("gemini_api_key");
         if (savedKey) {
@@ -73,13 +72,11 @@
             return;
         }
 
-        // 記住 Key 在手機本地記憶體
         localStorage.setItem("gemini_api_key", API_KEY);
 
         output.innerText = "翻譯中...";
         btn.disabled = true;
 
-        // 使用通用且最新的 Gemini 2.5 Flash Endpoint，相容 AQ. 開頭金鑰
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
         const requestBody = {
@@ -103,7 +100,7 @@
                 output.innerText = data.candidates[0].content.parts[0].text.trim();
             } else {
                 if (data.error) {
-                    output.innerText = ` API 錯誤 (${data.error.code})：${data.error.message}`;
+                    output.innerText = `API 錯誤 (${data.error.code})：${data.error.message}`;
                 } else {
                     output.innerText = "翻譯失敗，請確認網路或重新複製 API Key。";
                 }
@@ -115,7 +112,6 @@
         }
     }
 
-    // 🔊 語音朗讀
     function speakJapanese() {
         const text = document.getElementById("outputText").innerText;
         if (!text || text === "等待輸入中..." || text.startsWith("API 錯誤") || text.startsWith("連線失敗")) return;
@@ -127,7 +123,6 @@
         window.speechSynthesis.speak(utterance);
     }
 
-    // 📋 複製文字
     function copyResult() {
         const text = document.getElementById("outputText").innerText;
         if (!text || text === "等待輸入中...") return;
