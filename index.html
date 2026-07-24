@@ -9,10 +9,10 @@
         body { background-color: #f2f2f7; color: #1c1c1e; padding: 16px; display: flex; justify-content: center; }
         .card { width: 100%; max-width: 480px; background: #ffffff; border-radius: 20px; padding: 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); }
         h2 { font-size: 1.4rem; text-align: center; margin-bottom: 16px; color: #2c3e50; }
-        .api-key-group { margin-bottom: 16px; }
+        .form-group { margin-bottom: 14px; }
         label { font-size: 0.85rem; font-weight: 600; color: #6c757d; margin-bottom: 6px; display: block; }
-        input[type="password"], textarea { width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 12px; font-size: 1rem; outline: none; }
-        input[type="password"]:focus, textarea:focus { border-color: #007aff; }
+        input[type="password"], select, textarea { width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 12px; font-size: 1rem; outline: none; background: #fff; }
+        input[type="password"]:focus, select:focus, textarea:focus { border-color: #007aff; }
         textarea { height: 100px; resize: none; margin-bottom: 12px; }
         .btn-primary { width: 100%; padding: 14px; background-color: #007aff; color: #ffffff; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
         .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -28,9 +28,18 @@
 <div class="card">
     <h2>🇯🇵 隨身日文翻譯官</h2>
 
-    <div class="api-key-group">
+    <div class="form-group">
         <label for="apiKey">Gemini API Key：</label>
-        <input type="password" id="apiKey" placeholder="請貼上你的 API Key">
+        <input type="password" id="apiKey" placeholder="請貼上你的 API Key (AQ...)">
+    </div>
+
+    <div class="form-group">
+        <label for="modelSelect">使用模型（可切換）：</label>
+        <select id="modelSelect">
+            <option value="gemini-2.0-flash">gemini-2.0-flash (推薦首選)</option>
+            <option value="gemini-flash">gemini-flash (自動最新版)</option>
+            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+        </select>
     </div>
 
     <textarea id="inputText" placeholder="請輸入中文...（例如：請問這附近有超商嗎？）"></textarea>
@@ -54,10 +63,15 @@
         if (savedKey) {
             document.getElementById("apiKey").value = savedKey;
         }
+        const savedModel = localStorage.getItem("gemini_model");
+        if (savedModel) {
+            document.getElementById("modelSelect").value = savedModel;
+        }
     });
 
     async function translateText() {
         const API_KEY = document.getElementById("apiKey").value.trim();
+        const selectedModel = document.getElementById("modelSelect").value;
         const input = document.getElementById("inputText").value.trim();
         const output = document.getElementById("outputText");
         const btn = document.getElementById("submitBtn");
@@ -73,12 +87,13 @@
         }
 
         localStorage.setItem("gemini_api_key", API_KEY);
+        localStorage.setItem("gemini_model", selectedModel);
 
         output.innerText = "翻譯中...";
         btn.disabled = true;
 
-        // 已修正為相容且穩定的 gemini-1.5-flash
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        // 動態代入選取的模型名稱
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${API_KEY}`;
 
         const requestBody = {
             contents: [{
@@ -101,7 +116,7 @@
                 output.innerText = data.candidates[0].content.parts[0].text.trim();
             } else {
                 if (data.error) {
-                    output.innerText = `API 錯誤 (${data.error.code})：${data.error.message}`;
+                    output.innerText = `API 錯誤 (${data.error.code})：${data.error.message}\n💡 提示：可嘗試在上方選單切換其他模型名稱再試一次。`;
                 } else {
                     output.innerText = "翻譯失敗，請確認網路或重新複製 API Key。";
                 }
