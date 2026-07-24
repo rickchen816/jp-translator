@@ -9,34 +9,34 @@
         body { background-color: #f2f2f7; color: #1c1c1e; padding: 16px; display: flex; justify-content: center; }
         .card { width: 100%; max-width: 480px; background: #ffffff; border-radius: 20px; padding: 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); }
         h2 { font-size: 1.4rem; text-align: center; margin-bottom: 14px; color: #2c3e50; }
-        .form-group { margin-bottom: 12px; }
+        .form-group { margin-bottom: 10px; }
         label { font-size: 0.85rem; font-weight: 600; color: #6c757d; margin-bottom: 4px; display: block; }
-        input[type="password"], select { width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 12px; font-size: 1rem; outline: none; background: #fff; }
+        input[type="password"], select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d1d6; border-radius: 12px; font-size: 1rem; outline: none; background: #fff; }
         
         /* 超大一鍵對講按鈕 */
         .btn-smart-mic {
             width: 100%;
-            height: 90px;
-            margin: 16px 0;
+            height: 80px;
+            margin: 12px 0;
             border: none;
-            border-radius: 20px;
+            border-radius: 18px;
             background: linear-gradient(135deg, #007aff, #5856d6);
             color: white;
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 6px 16px rgba(0, 122, 255, 0.3);
+            box-shadow: 0 6px 16px rgba(0, 122, 255, 0.25);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
             transition: all 0.2s ease;
         }
 
         .btn-smart-mic.recording {
             background: linear-gradient(135deg, #ff3b30, #ff9500);
             animation: pulse 1.2s infinite;
-            box-shadow: 0 6px 16px rgba(255, 59, 48, 0.4);
+            box-shadow: 0 6px 16px rgba(255, 59, 48, 0.35);
         }
 
         @keyframes pulse {
@@ -45,11 +45,14 @@
             100% { transform: scale(1); }
         }
 
-        .result-box { padding: 16px; background-color: #f8f9fa; border-radius: 14px; border: 1px solid #e5e5ea; min-height: 110px; margin-top: 10px; }
+        textarea { height: 60px; resize: none; margin-bottom: 6px; }
+
+        .result-box { padding: 14px; background-color: #f8f9fa; border-radius: 14px; border: 1px solid #e5e5ea; min-height: 90px; margin-top: 10px; }
         .detected-lang { font-size: 0.85rem; color: #007aff; font-weight: 600; margin-bottom: 6px; }
-        .result-text { font-size: 1.25rem; font-weight: 500; color: #000000; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
-        .action-btns { display: flex; gap: 10px; margin-top: 12px; }
-        .btn-secondary { flex: 1; padding: 10px; background-color: #e5e5ea; color: #1c1c1e; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+        .result-text { font-size: 1.25rem; font-weight: 500; color: #000000; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+        .action-btns { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-secondary { flex: 1; padding: 10px; background-color: #e5e5ea; color: #1c1c1e; border: none; border-radius: 10px; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+        .btn-retranslate { background-color: #34c759; color: white; margin-top: 4px; margin-bottom: 12px; }
         .tip-info { font-size: 0.8rem; color: #8e8e93; margin-top: 10px; text-align: center; }
     </style>
 </head>
@@ -66,7 +69,7 @@
     <div class="form-group">
         <label for="modelSelect">模型選擇：</label>
         <select id="modelSelect">
-            <option value="gemini-3.6-flash">gemini-3.6-flash (推薦聲學辨識首選)</option>
+            <option value="gemini-3.6-flash">gemini-3.6-flash (語音辨識首選)</option>
             <option value="gemini-3.5-flash">gemini-3.5-flash</option>
             <option value="gemini-2.5-flash">gemini-2.5-flash</option>
         </select>
@@ -77,6 +80,14 @@
         🎤 按一下說話（中/日皆可）
     </button>
 
+    <!-- 新增：語音辨識原文視窗 (可編輯) -->
+    <div class="form-group">
+        <label for="originalText" id="originalLabel">語音辨識原文（若有錯可在此手動修改）：</label>
+        <textarea id="originalText" placeholder="錄音完畢後，AI 聽到的原文會顯示在這裡..."></textarea>
+        <button class="btn-secondary btn-retranslate" style="width:100%" onclick="retranslateManual()">🔄 修正後重新翻譯並發音</button>
+    </div>
+
+    <!-- 翻譯結果視窗 -->
     <div class="result-box">
         <div class="detected-lang" id="detectedLang">對話狀態：準備就緒</div>
         <div class="result-text" id="outputText">請按上方按鈕開始錄音...</div>
@@ -87,7 +98,7 @@
         <button class="btn-secondary" onclick="copyResult()">📋 複製結果</button>
     </div>
 
-    <div class="tip-info">💡 按一下開始錄音，講完再按一下結束。AI 會自動辨識性別與語言並同步發音！</div>
+    <div class="tip-info">💡 聽錯時可在「原文視窗」直接修改，再按綠色按鈕重新發音！</div>
 </div>
 
 <script>
@@ -96,7 +107,8 @@
     let isRecording = false;
     let lastTranslatedText = "";
     let lastTargetLang = "";
-    let lastDetectedGender = "female"; // 預設 female
+    let lastDetectedGender = "female"; 
+    let lastDetectedLang = "zh";
     let systemVoices = [];
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -159,6 +171,7 @@
         const selectedModel = document.getElementById("modelSelect").value;
         const statusLabel = document.getElementById("detectedLang");
         const output = document.getElementById("outputText");
+        const originalInput = document.getElementById("originalText");
 
         if (!API_KEY) {
             alert("請先貼上 API Key！");
@@ -174,14 +187,14 @@
         reader.onloadend = async () => {
             const base64Audio = reader.result.split(',')[1];
 
-            // Prompt 強制要求 AI 分析音訊頻率判斷性別 (male/female)
             const promptText = `你是一個專業的中日雙向即時翻譯官，並且具備聲學辨識能力。請仔細聽這段語音音訊：
 1. 【性別辨識】：分析說話者的音色與頻率，判斷說話者是男性("male")還是女性("female")。
-2. 【語言與翻譯】：
+2. 【語音轉文字】：將聽到的內容完整寫出 ("original")。
+3. 【語言與翻譯】：
    - 如果說話者講的是【中文】：翻譯成適合日本旅遊使用的禮貌敬語【日文】（丁寧語）。
    - 如果說話者講的是【日文】：翻譯成【繁體中文】。
-3. 請嚴格按照以下 JSON 格式回答，不要加任何 Markdown 標記或引號：
-{"gender": "male", "detected": "zh", "translation": "翻譯後的內容"}`;
+4. 請嚴格按照以下 JSON 格式回答，不要加任何 Markdown 標記：
+{"gender": "male", "detected": "zh", "original": "聽到的原文", "translation": "翻譯後的內容"}`;
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${API_KEY}`;
 
@@ -209,7 +222,11 @@
 
                     const parsed = JSON.parse(rawText);
                     lastTranslatedText = parsed.translation;
-                    lastDetectedGender = parsed.gender; // "male" 或 "female"
+                    lastDetectedGender = parsed.gender; 
+                    lastDetectedLang = parsed.detected;
+
+                    // 填入原文視窗
+                    originalInput.value = parsed.original;
 
                     const genderTag = lastDetectedGender === "male" ? "👨 男聲" : "👩 女聲";
 
@@ -235,13 +252,65 @@
         };
     }
 
+    // 🔄 手動修改原文後重新翻譯
+    async function retranslateManual() {
+        const API_KEY = document.getElementById("apiKey").value.trim();
+        const selectedModel = document.getElementById("modelSelect").value;
+        const modifiedOriginal = document.getElementById("originalText").value.trim();
+        const statusLabel = document.getElementById("detectedLang");
+        const output = document.getElementById("outputText");
+
+        if (!modifiedOriginal) {
+            alert("原文框內沒有文字！");
+            return;
+        }
+
+        output.innerText = "重新翻譯中...";
+
+        let promptText = "";
+        if (lastDetectedLang === "zh") {
+            promptText = `請將以下中文內容翻譯成適合在日本旅遊日常使用的禮貌敬語（丁寧語）。請直接提供日文翻譯，不要包含任何中文解釋或引號：\n\n${modifiedOriginal}`;
+        } else {
+            promptText = `請將以下日文內容翻譯成繁體中文。請直接提供中文翻譯，不要包含任何解釋或引號：\n\n${modifiedOriginal}`;
+        }
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${API_KEY}`;
+
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.candidates && data.candidates[0].content && data.candidates[0].content.parts[0].text) {
+                lastTranslatedText = data.candidates[0].content.parts[0].text.trim();
+                output.innerText = lastTranslatedText;
+
+                const genderTag = lastDetectedGender === "male" ? "👨 男聲" : "👩 女聲";
+                if (lastDetectedLang === "zh") {
+                    statusLabel.innerText = `修正後【中文 (${genderTag})】 ➔ 譯為日文：`;
+                    speakText(lastTranslatedText, "ja-JP", lastDetectedGender);
+                } else {
+                    statusLabel.innerText = `修正後【日文 (${genderTag})】 ➔ 譯為繁體中文：`;
+                    speakText(lastTranslatedText, "zh-TW", lastDetectedGender);
+                }
+            } else {
+                output.innerText = "翻譯失敗：" + (data.error ? data.error.message : "未知錯誤");
+            }
+        } catch (error) {
+            output.innerText = "連線失敗：" + error.message;
+        }
+    }
+
     function resetMicBtn() {
         const micBtn = document.getElementById("micBtn");
         micBtn.classList.remove("recording");
         micBtn.innerText = "🎤 按一下說話（中/日皆可）";
     }
 
-    // 🔊 根據 AI 偵測到的性別 (male / female) 選擇最佳語音庫
     function speakText(text, lang, gender) {
         if (!text) return;
         window.speechSynthesis.cancel();
@@ -254,7 +323,7 @@
             systemVoices = window.speechSynthesis.getVoices();
         }
 
-        const langPrefix = lang.split('-')[0]; // 'ja' 或 'zh'
+        const langPrefix = lang.split('-')[0]; 
         const matchedVoice = systemVoices.find(voice => {
             const isLangMatch = voice.lang.toLowerCase().replace('_', '-').startsWith(langPrefix);
             const voiceName = voice.name.toLowerCase();
