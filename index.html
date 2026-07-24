@@ -2,62 +2,208 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>隨身日文翻譯官</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f5f5f7; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h2 { text-align: center; color: #333; margin-bottom: 20px; }
-        textarea { width: 100%; height: 120px; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; resize: none; outline: none; }
-        textarea:focus { border-color: #007aff; }
-        button { width: 100%; padding: 14px; background-color: #007aff; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; margin-top: 15px; cursor: pointer; transition: background 0.2s; }
-        button:active { background-color: #0056b3; }
-        .result-box { margin-top: 20px; padding: 15px; background-color: #f9f9fb; border-radius: 10px; border: 1px solid #eee; min-height: 80px; }
-        .result-title { font-size: 12px; color: #888; margin-bottom: 5px; }
-        .result-text { font-size: 18px; color: #1d1d1f; white-space: pre-wrap; word-break: break-word; }
-        .speak-btn { background-color: #34c759; margin-top: 10px; font-size: 14px; padding: 8px; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f2f2f7;
+            color: #1c1c1e;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 480px;
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            text-align: center;
+            margin-bottom: 16px;
+            color: #2c3e50;
+        }
+
+        .api-key-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        input[type="password"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d1d6;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="password"]:focus, textarea:focus {
+            border-color: #007aff;
+        }
+
+        textarea {
+            height: 100px;
+            resize: none;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background-color: #007aff;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
+            transition: opacity 0.2s;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result-box {
+            margin-top: 20px;
+            padding: 16px;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e5e5ea;
+            min-height: 100px;
+        }
+
+        .result-text {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #000000;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 10px;
+            background-color: #e5e5ea;
+            color: #1c1c1e;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .btn-speak {
+            background-color: #34c759;
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>🇯🇵 日文翻譯官</h2>
-    <textarea id="inputText" placeholder="輸入想說的中文..."></textarea>
-    <button onclick="translateText()" id="submitBtn">翻譯成日文</button>
+<div class="card">
+    <h2>🇯🇵 隨身日文翻譯官</h2>
+
+    <!-- 寫法 B：由輸入框動態取得 API Key -->
+    <div class="api-key-group">
+        <label for="apiKey">Gemini API Key：</label>
+        <input type="password" id="apiKey" placeholder="貼上 AIzaSy 開頭的 API Key">
+    </div>
+
+    <textarea id="inputText" placeholder="請輸入中文...（例如：請問附近有超商嗎？）"></textarea>
+
+    <button class="btn-primary" onclick="translateText()" id="submitBtn">翻譯成日文</button>
 
     <div class="result-box">
-        <div class="result-title">日文翻譯結果（日常生活禮貌敬語）：</div>
-        <div class="result-text" id="outputText">等待翻譯中...</div>
+        <label>日文翻譯結果（禮貌敬語）：</label>
+        <div class="result-text" id="outputText">等待輸入中...</div>
     </div>
-    <button class="speak-btn" onclick="speakJapanese()">🔊 發音朗讀</button>
+
+    <div class="action-btns">
+        <button class="btn-secondary btn-speak" onclick="speakJapanese()">🔊 語音發音</button>
+        <button class="btn-secondary" onclick="copyResult()">📋 複製日文</button>
+    </div>
 </div>
 
 <script>
-    // 1. 填入你的 Gemini API Key
-    const API_KEY = "AQ.Ab8RN6L-auDG-iblhqN9hI2tKFV5inS6XHUf0X9CeKAD5-2t0A"; 
+    // 頁面載入時，自動從手機記憶體（LocalStorage）讀取上次儲存的 Key
+    document.addEventListener("DOMContentLoaded", () => {
+        const savedKey = localStorage.getItem("gemini_api_key");
+        if (savedKey) {
+            document.getElementById("apiKey").value = savedKey;
+        }
+    });
 
     async function translateText() {
+        // 【寫法 B】動態從輸入框讀取 API Key，不寫死在程式碼中
+        const API_KEY = document.getElementById("apiKey").value.trim();
         const input = document.getElementById("inputText").value.trim();
         const output = document.getElementById("outputText");
         const btn = document.getElementById("submitBtn");
 
-        if (!input) {
-            alert("請先輸入內容！");
+        // 檢查金鑰格式是否正確（必須是 AIzaSy 開頭）
+        if (!API_KEY) {
+            alert("請輸入 API Key！");
             return;
         }
+
+        if (!API_KEY.startsWith("AIzaSy")) {
+            alert("API Key 格式似乎不正確！正確的金鑰應該是以 AIzaSy 開頭。");
+            return;
+        }
+
+        if (!input) {
+            alert("請輸入要翻譯的內容！");
+            return;
+        }
+
+        // 自動儲存正確的 Key 到手機本地儲存空間，下次免再輸入
+        localStorage.setItem("gemini_api_key", API_KEY);
 
         output.innerText = "翻譯中...";
         btn.disabled = true;
 
-        // 指定使用 Gemini 2.5 Flash 模型
+        // 使用最新版 Gemini 2.5 Flash API 介面
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
-        // 系統 Prompt：強制只回應日文禮貌敬語
         const requestBody = {
             contents: [{
                 parts: [{
-                    text: `請將以下內容翻譯成適合在日本旅遊日常使用的禮貌敬語（丁寧語，如～です、～ます）。請直接提供翻譯結果即可，不需要任何解釋或額外說明：\n\n${input}`
+                    text: `請將以下內容翻譯成適合在日本旅遊日常使用的禮貌敬語（丁寧語，如～です、～ます）。請直接提供日文翻譯結果即可，不需要包含任何中文解釋、注音或引號：\n\n${input}`
                 }]
             }]
         };
@@ -70,27 +216,47 @@
             });
 
             const data = await response.json();
-            
-            if (data.candidates && data.candidates[0].content.parts[0].text) {
+
+            if (response.ok && data.candidates && data.candidates[0].content.parts[0].text) {
                 output.innerText = data.candidates[0].content.parts[0].text.trim();
             } else {
-                output.innerText = "翻譯失敗，請檢查 API Key 或網路狀態。";
+                if (data.error) {
+                    output.innerText = `錯誤訊息 (${data.error.code})：${data.error.message}`;
+                } else {
+                    output.innerText = "翻譯失敗，請檢查 API Key 或網路狀態。";
+                }
             }
         } catch (error) {
-            output.innerText = "發生錯誤：" + error.message;
+            output.innerText = "連線失敗：" + error.message;
         } finally {
             btn.disabled = false;
         }
     }
 
-    // 手機語音朗讀日文
+    // 🔊 手機語音朗讀
     function speakJapanese() {
         const text = document.getElementById("outputText").innerText;
-        if (!text || text === "等待翻譯中..." || text.includes("失敗")) return;
+        if (!text || text === "等待輸入中..." || text.startsWith("錯誤") || text.startsWith("翻譯失敗")) return;
+
+        window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "ja-JP";
+        utterance.rate = 0.9;
+
         window.speechSynthesis.speak(utterance);
+    }
+
+    // 📋 複製翻譯文字
+    function copyResult() {
+        const text = document.getElementById("outputText").innerText;
+        if (!text || text === "等待輸入中...") return;
+
+        navigator.clipboard.writeText(text).then(() => {
+            alert("已複製日文！");
+        }).catch(err => {
+            alert("複製失敗：" + err);
+        });
     }
 </script>
 
