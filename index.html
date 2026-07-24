@@ -77,9 +77,8 @@
     <div class="form-group">
         <label for="modelSelect">模型選擇：</label>
         <select id="modelSelect">
-            <option value="gemini-3.6-flash">gemini-3.6-flash (推薦)</option>
-            <option value="gemini-2.5-flash">gemini-2.5-flash (省配額備用)</option>
-            <option value="gemini-3.5-flash">gemini-3.5-flash</option>
+            <option value="gemini-3.6-flash">gemini-3.6-flash (極速推薦)</option>
+            <option value="gemini-2.5-flash">gemini-2.5-flash (備用)</option>
         </select>
     </div>
 
@@ -103,7 +102,7 @@
         <button class="btn-secondary" onclick="copyResult()">📋 複製結果</button>
     </div>
 
-    <div class="tip-info">💡 已針對韓語/美語模式進行 Prompt 節流輕量化優化！</div>
+    <div class="tip-info">⚡ 已進行音訊極速壓縮優化，傳輸與回應更即時！</div>
 </div>
 
 <script>
@@ -136,9 +135,8 @@
         systemVoices = window.speechSynthesis.getVoices();
     }
 
-    // 防護型 API 請求（自動在 429 或限流時降級重試）
     async function fetchGeminiWithFallback(apiKey, primaryModel, requestBody) {
-        const fallbackModels = [primaryModel, "gemini-2.5-flash", "gemini-3.5-flash"].filter((v, i, a) => a.indexOf(v) === i);
+        const fallbackModels = [primaryModel, "gemini-2.5-flash"].filter((v, i, a) => a.indexOf(v) === i);
         
         for (let model of fallbackModels) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -155,17 +153,16 @@
                     return data;
                 }
 
-                if (data.error && (data.error.code === 429 || data.error.message.includes("quota") || data.error.message.includes("exceeded"))) {
-                    console.warn(`[API] ${model} 達到頻率限制，自動切換至備用模型進行處理...`);
+                if (data.error && (data.error.code === 429 || data.error.message.includes("quota"))) {
                     continue;
                 } else {
-                    throw new Error(data.error ? data.error.message : "未知的 API 錯誤");
+                    throw new Error(data.error ? data.error.message : "API 錯誤");
                 }
             } catch (err) {
                 if (model === fallbackModels[fallbackModels.length - 1]) throw err;
             }
         }
-        throw new Error("發送頻率過高，請稍等約 10-20 秒後再重試。");
+        throw new Error("伺服器繁忙，請稍後再試。");
     }
 
     async function toggleRecording() {
@@ -173,8 +170,15 @@
 
         if (!isRecording) {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
+                // 輕量化音訊錄製參數（降低位元率，加速上傳速度）
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 16000 } });
+                
+                let options = { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 16000 };
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options = { audioBitsPerSecond: 16000 };
+                }
+
+                mediaRecorder = new MediaRecorder(stream, options);
                 audioChunks = [];
 
                 mediaRecorder.ondataavailable = (event) => {
@@ -182,7 +186,7 @@
                 };
 
                 mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
                     await processAudioTranslation(audioBlob);
                 };
 
@@ -198,7 +202,7 @@
         } else {
             isRecording = false;
             micBtn.classList.remove("recording");
-            micBtn.innerText = "⏳ AI 聲學辨識與翻譯中...";
+            micBtn.innerText = "⏳ 辨識中...";
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
                 mediaRecorder.stop();
                 mediaRecorder.stream.getTracks().forEach(track => track.stop());
@@ -231,18 +235,19 @@
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
             const base64Audio = reader.result.split(',')[1];
+            const mimeType = audioBlob.type || "audio/webm";
 
-            // 輕量化精簡 Prompt，大幅降低 Token 使用率
-            const promptText = `語音翻譯任務：
-1. 判斷說話者性別 ("male" / "female")
-2. 轉寫原文 ("original")
-3. 若為【中文】➔ 譯為禮貌【${selectedLangName}】；若為【外語】➔ 譯為【繁體中文】
-請僅輸出 JSON，格式：{"gender":"male","detected":"zh","original":"原文","translation":"翻譯"}`;
+            // 超極速短 Prompt
+            const promptText = `語音任務：
+1. 判斷性別("male"/"female")
+2. 轉寫內容("original")
+3. 翻譯：中文 ➔ 禮貌${selectedLangName}；外語 ➔ 繁體中文
+JSON格式：{"gender":"male","detected":"zh","original":"..","translation":".."}`;
 
             const requestBody = {
                 contents: [{
                     parts: [
-                        { inline_data: { mime_type: "audio/webm", data: base64Audio } },
+                        { inline_data: { mime_type: mimeType, data: base64Audio } },
                         { text: promptText }
                     ]
                 }]
@@ -305,9 +310,9 @@
 
         let promptText = "";
         if (lastDetectedLang === "zh") {
-            promptText = `將以下中文翻譯成禮貌【${selectedLangName}】，直接給翻譯文字：\n${modifiedOriginal}`;
+            promptText = `翻譯成禮貌${selectedLangName}：\n${modifiedOriginal}`;
         } else {
-            promptText = `將以下文字翻譯成【繁體中文】，直接給翻譯文字：\n${modifiedOriginal}`;
+            promptText = `翻譯成繁體中文：\n${modifiedOriginal}`;
         }
 
         try {
