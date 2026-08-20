@@ -1,374 +1,542 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>極速雙向中日對講翻譯官</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif; }
-        
-        body { 
-            background-color: #f5f5f7; 
-            color: #1d1d1f; 
-            padding: 24px 16px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-            min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>旅遊行程表</title>
+<meta name="description" content="可編輯的旅遊行程表，支援共用連結">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:#f5f0eb;color:#2c2c2c;min-height:100vh}
 
-        .card { 
-            width: 100%; 
-            max-width: 440px; 
-            background: rgba(255, 255, 255, 0.9); 
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 24px; 
-            padding: 28px 24px; 
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.02); 
-            border: 1px solid rgba(255, 255, 255, 0.8);
-        }
+/* ── Header ── */
+.header{background:linear-gradient(135deg,#c0392b,#5d1f1f);color:#fff;padding:28px 20px 20px;text-align:center}
+.header h1{font-size:2rem;font-weight:700;letter-spacing:2px}
+.header-meta{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:14px}
+.meta-chip{background:rgba(255,255,255,.15);border-radius:20px;padding:5px 14px;font-size:.85rem;display:flex;align-items:center;gap:6px}
 
-        h2 { 
-            font-size: 1.5rem; 
-            font-weight: 600;
-            text-align: center; 
-            margin-bottom: 20px; 
-            color: #1d1d1f; 
-            letter-spacing: -0.015em;
-        }
+/* ── contenteditable ── */
+[contenteditable=true]{outline:none;border-radius:4px;transition:background .15s;min-width:20px;display:inline-block}
+[contenteditable=true]:focus{background:rgba(255,255,255,.18);box-shadow:0 0 0 2px rgba(255,255,255,.45)}
+.edit-mode [contenteditable=true]{cursor:text}
+.edit-mode [contenteditable=true]:not(:focus){background:rgba(255,255,255,.07)}
 
-        .form-group { margin-bottom: 14px; }
+/* ── Toolbar ── */
+.toolbar{max-width:920px;margin:14px auto 0;padding:0 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:10px;border:none;cursor:pointer;font-size:.83rem;font-weight:600;transition:all .15s;white-space:nowrap;line-height:1}
+.btn-edit{background:#fff;border:2px solid #c0392b;color:#c0392b}
+.btn-edit:hover,.btn-edit.active{background:#c0392b;color:#fff}
+.btn-save{background:#27ae60;color:#fff}.btn-save:hover{background:#1e8449}
+.btn-load{background:#fff;border:2px solid #888;color:#555}.btn-load:hover{background:#f0f0f0}
+.btn-share{background:#2980b9;color:#fff}.btn-share:hover{background:#1f6da1}
+.btn-add-day{background:#8e44ad;color:#fff}.btn-add-day:hover{background:#7d3c98}
+.btn-reset{background:#fff;border:2px solid #e67e22;color:#e67e22}.btn-reset:hover{background:#e67e22;color:#fff}
+.toolbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.url-status{font-size:.75rem;color:#bbb;display:flex;align-items:center;gap:4px}
+.url-status.saved{color:#27ae60}
+#file-input{display:none}
 
-        label { 
-            font-size: 0.8rem; 
-            font-weight: 600; 
-            color: #86868b; 
-            margin-bottom: 6px; 
-            display: block; 
-            letter-spacing: -0.01em;
-        }
+/* ── Tabs ── */
+.tabs-wrap{max-width:920px;margin:20px auto 0;padding:0 16px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab-btn{background:#fff;border:2px solid #ddd;border-radius:12px;padding:8px 13px;cursor:pointer;font-size:.8rem;font-weight:600;color:#666;transition:all .15s;text-align:center;position:relative;line-height:1.4}
+.tab-btn:hover{border-color:#c0392b;color:#c0392b}
+.tab-btn.active{background:#c0392b;border-color:#c0392b;color:#fff;box-shadow:0 4px 12px rgba(192,57,43,.3)}
+.tab-del{position:absolute;top:-7px;right:-7px;width:19px;height:19px;background:#e74c3c;color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;display:none;align-items:center;justify-content:center}
+.edit-mode .tab-del{display:flex}
 
-        input[type="password"], select, textarea { 
-            width: 100%; 
-            padding: 12px 14px; 
-            border: 1px solid #d2d2d7; 
-            border-radius: 12px; 
-            font-size: 0.95rem; 
-            outline: none; 
-            background: #ffffff; 
-            color: #1d1d1f;
-            transition: all 0.2s ease;
-        }
+/* ── Day Panel ── */
+.day-panel{display:none;max-width:920px;margin:16px auto 32px;padding:0 16px}
+.day-panel.active{display:block}
+.day-header{background:#fff;border-radius:16px;padding:18px 20px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.day-num-badge{background:#c0392b;color:#fff;width:54px;height:54px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;flex-shrink:0;line-height:1.4}
+.day-num-badge .n{font-size:1.45rem;line-height:1}
+.day-info{flex:1;min-width:120px}
+.day-info h2{font-size:1.1rem;font-weight:700}
+.day-info .day-date{font-size:.82rem;color:#999;margin-top:2px}
+.day-theme{background:#fdf0ed;color:#c0392b;border:1px solid #f5c6bb;border-radius:20px;padding:4px 12px;font-size:.78rem;font-weight:600;white-space:nowrap}
 
-        input[type="password"]:focus, select:focus, textarea:focus {
-            border-color: #0071e3;
-            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
-        }
+/* ── Timeline ── */
+.timeline{position:relative;padding-left:26px}
+.timeline::before{content:'';position:absolute;left:10px;top:8px;bottom:8px;width:2px;background:linear-gradient(to bottom,#c0392b,#e8a89c);border-radius:2px}
+.event{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06);position:relative;border-left:4px solid #ddd;transition:box-shadow .15s}
+.event:hover{box-shadow:0 4px 14px rgba(0,0,0,.1)}
+.event::before{content:'';position:absolute;left:-21px;top:18px;width:12px;height:12px;background:#aaa;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 2px #aaa}
+.event.transport{border-left-color:#2980b9}.event.transport::before{background:#2980b9;box-shadow:0 0 0 2px #2980b9}
+.event.food{border-left-color:#e67e22}.event.food::before{background:#e67e22;box-shadow:0 0 0 2px #e67e22}
+.event.attraction{border-left-color:#27ae60}.event.attraction::before{background:#27ae60;box-shadow:0 0 0 2px #27ae60}
+.event.theme-park{border-left-color:#8e44ad}.event.theme-park::before{background:#8e44ad;box-shadow:0 0 0 2px #8e44ad}
+.event.shopping{border-left-color:#c0392b}.event.shopping::before{background:#c0392b;box-shadow:0 0 0 2px #c0392b}
+.event.hotel{border-left-color:#7f8c8d}.event.hotel::before{background:#7f8c8d;box-shadow:0 0 0 2px #7f8c8d}
+.event-row{display:flex;align-items:flex-start;gap:10px}
+.event-body{flex:1;min-width:0}
+.event-time{font-size:.73rem;color:#c0392b;font-weight:700;margin-bottom:3px}
+.event-title{font-size:.95rem;font-weight:700;color:#1a1a1a;margin-bottom:5px}
+.event-desc{font-size:.83rem;color:#555;line-height:1.65}
+.event-actions{display:none;flex-direction:column;gap:4px;flex-shrink:0}
+.edit-mode .event-actions{display:flex}
+.icon-btn{width:28px;height:28px;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.del-btn{background:#fde8e8;color:#c0392b}.del-btn:hover{background:#c0392b;color:#fff}
+.move-btn{background:#f0f0f0;color:#555}.move-btn:hover{background:#ddd}
+.type-select{display:none;margin-top:6px}
+.edit-mode .type-select{display:block}
+.type-select select{font-size:.75rem;padding:3px 8px;border-radius:8px;border:1px solid #ddd;background:#f9f9f9;cursor:pointer;color:#555}
+.add-event-btn{display:none;width:100%;padding:10px;border:2px dashed #ddd;border-radius:12px;background:transparent;cursor:pointer;font-size:.83rem;color:#aaa;text-align:center;transition:all .15s;margin-top:4px}
+.edit-mode .add-event-btn{display:block}
+.add-event-btn:hover{border-color:#c0392b;color:#c0392b;background:#fdf0ed}
+.tip-box{background:#fffbf0;border:1px solid #fde68a;border-radius:12px;padding:12px 14px;margin-top:12px;font-size:.82rem;color:#6b4c00;line-height:1.7}
 
-        textarea { height: 68px; resize: none; margin-bottom: 6px; line-height: 1.4; }
+/* ── Modals ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px;padding:26px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h3{font-size:1.05rem;margin-bottom:10px}
+.modal p{font-size:.85rem;color:#555;line-height:1.7;margin-bottom:12px}
+.url-display{background:#f5f5f5;border:1px solid #ddd;border-radius:8px;padding:10px;font-size:.72rem;color:#333;word-break:break-all;max-height:90px;overflow:auto;margin-bottom:14px;font-family:monospace;user-select:all}
+.modal-btns{display:flex;gap:8px;flex-wrap:wrap}
+.modal-btns .btn{flex:1;justify-content:center}
+.btn-close{background:#f0f0f0;color:#555}.btn-close:hover{background:#ddd}
+.btn-copy{background:#c0392b;color:#fff}.btn-copy:hover{background:#a93226}
+.btn-dl{background:#27ae60;color:#fff}.btn-dl:hover{background:#1e8449}
+.steps{list-style:none;counter-reset:s}
+.steps li{counter-increment:s;padding:8px 0 8px 36px;position:relative;font-size:.84rem;color:#444;border-bottom:1px solid #f0f0f0;line-height:1.5}
+.steps li:last-child{border:none}
+.steps li::before{content:counter(s);position:absolute;left:0;top:8px;width:24px;height:24px;background:#c0392b;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700}
+.steps code{background:#f0f0f0;padding:1px 6px;border-radius:4px;font-family:monospace;font-size:.8rem;color:#c0392b}
 
-        /* Apple 風格對講大按鈕 */
-        .btn-smart-mic {
-            width: 100%; 
-            height: 76px; 
-            margin: 16px 0; 
-            border: none; 
-            border-radius: 18px;
-            background: #0071e3; 
-            color: #ffffff; 
-            font-size: 1.15rem; 
-            font-weight: 600;
-            cursor: pointer; 
-            box-shadow: 0 4px 14px rgba(0, 113, 227, 0.25); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 8px;
-            letter-spacing: -0.01em;
-            transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
-        }
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#2c2c2c;color:#fff;padding:10px 22px;border-radius:30px;font-size:.85rem;opacity:0;transition:all .3s;z-index:2000;pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
-        .btn-smart-mic:active {
-            transform: scale(0.98);
-            opacity: 0.9;
-        }
+/* ── Footer ── */
+.footer{text-align:center;padding:20px;color:#bbb;font-size:.78rem}
 
-        .btn-smart-mic.recording { 
-            background: linear-gradient(135deg, #ff3b30, #ff9500); 
-            box-shadow: 0 4px 14px rgba(255, 59, 48, 0.3);
-            animation: pulse 1.2s infinite; 
-        }
-
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.98); } }
-
-        /* 結果顯示區塊 */
-        .result-box { 
-            padding: 16px; 
-            background: #f5f5f7; 
-            border-radius: 16px; 
-            border: 1px solid #e5e5ea; 
-            min-height: 90px; 
-            margin-top: 10px; 
-        }
-
-        .detected-lang { 
-            font-size: 0.8rem; 
-            color: #0071e3; 
-            font-weight: 600; 
-            margin-bottom: 6px; 
-            letter-spacing: -0.01em;
-        }
-
-        .result-text { 
-            font-size: 1.2rem; 
-            font-weight: 500; 
-            color: #1d1d1f; 
-            line-height: 1.45; 
-            white-space: pre-wrap; 
-            word-break: break-word; 
-        }
-
-        /* 輔助按鈕 */
-        .action-btns { display: flex; gap: 10px; margin-top: 12px; }
-
-        .btn-sec { 
-            flex: 1; 
-            padding: 11px; 
-            background: #e8e8ed; 
-            color: #1d1d1f; 
-            border: none; 
-            border-radius: 12px; 
-            font-size: 0.88rem; 
-            font-weight: 600; 
-            cursor: pointer; 
-            transition: all 0.2s ease;
-        }
-
-        .btn-sec:active { background: #d1d1d6; }
-
-        .btn-green { 
-            background: #34c759; 
-            color: #ffffff; 
-            margin: 4px 0 12px 0; 
-            width: 100%; 
-            box-shadow: 0 2px 8px rgba(52, 199, 89, 0.2);
-        }
-
-        .btn-green:active { background: #28a745; }
-
-        .tip-info { 
-            font-size: 0.75rem; 
-            color: #86868b; 
-            margin-top: 14px; 
-            text-align: center; 
-            line-height: 1.3;
-        }
-    </style>
+@media(max-width:600px){
+  .header h1{font-size:1.5rem}
+  .btn{padding:7px 10px;font-size:.78rem}
+  .toolbar-right{margin-left:0;width:100%}
+}
+</style>
 </head>
 <body>
+<div id="app"></div>
+<div id="toast" class="toast"></div>
 
-<div class="card">
-    <h2>🇯🇵 智慧雙向中日對講翻譯官</h2>
-
-    <div class="form-group">
-        <label for="apiKey">Gemini API Key</label>
-        <input type="password" id="apiKey" placeholder="貼上 API Key (AQ...)">
+<!-- Share Modal -->
+<div class="modal-overlay" id="shareModal">
+  <div class="modal">
+    <h3>🔗 共用連結</h3>
+    <p>以下連結包含你的完整行程資料，傳給夥伴後直接開啟即可查看並編輯：</p>
+    <div class="url-display" id="shareUrl">產生中...</div>
+    <div class="modal-btns">
+      <button class="btn btn-copy" onclick="copyShareUrl()">📋 複製連結</button>
+      <button class="btn btn-dl" onclick="downloadHTML()">⬇️ 下載 HTML</button>
+      <button class="btn btn-close" onclick="closeModal('shareModal')">關閉</button>
     </div>
+  </div>
+</div>
 
-    <div class="form-group">
-        <label for="modelSelect">模型選擇</label>
-        <select id="modelSelect">
-            <option value="gemini-3.6-flash">gemini-3.6-flash (極速推薦)</option>
-            <option value="gemini-3.5-flash">gemini-3.5-flash (穩定備用)</option>
-        </select>
+<!-- GitHub Guide Modal -->
+<div class="modal-overlay" id="githubModal">
+  <div class="modal">
+    <h3>🐙 發佈到 GitHub Pages</h3>
+    <p>照以下步驟操作，就能得到永久公開連結（免費）：</p>
+    <ol class="steps">
+      <li>登入 <strong>github.com</strong>，點右上角 <strong>＋ → New repository</strong></li>
+      <li>Repository 名稱填 <code>trip</code>（或任意名稱），選 <strong>Public</strong>，按 Create</li>
+      <li>在 repo 頁面按 <strong>Add file → Upload files</strong>，上傳這個 <code>index.html</code> 檔案</li>
+      <li>進入 repo 的 <strong>Settings → Pages</strong>，Source 選 <strong>main</strong> branch，按 Save</li>
+      <li>等約 1 分鐘，你的行程頁面網址就是：<br><code>https://你的帳號.github.io/trip/</code></li>
+      <li>點「🔗 共用連結」把行程資料附加在網址後，就能分享給所有夥伴！</li>
+    </ol>
+    <div class="modal-btns" style="margin-top:16px">
+      <button class="btn btn-copy" onclick="window.open('https://github.com/new','_blank');closeModal('githubModal')">🐙 前往 GitHub</button>
+      <button class="btn btn-close" onclick="closeModal('githubModal')">關閉</button>
     </div>
+  </div>
+</div>
 
-    <button class="btn-smart-mic" id="micBtn" onclick="toggleRecording()">🎤 按一下說話（中/日皆可）</button>
-
-    <div class="form-group">
-        <label for="originalText">語音辨識原文（可手動修改）</label>
-        <textarea id="originalText" placeholder="錄音完畢後，AI 聽到的原文會顯示在這裡..."></textarea>
-        <button class="btn-sec btn-green" onclick="retranslateManual()">🔄 修正後重新翻譯並發音</button>
+<!-- Reset Confirm Modal -->
+<div class="modal-overlay" id="resetModal">
+  <div class="modal">
+    <h3>⚠️ 重置為空白行程表？</h3>
+    <p>這會清除所有行程內容，建立一個空白模板讓你重新輸入。此操作無法復原。</p>
+    <div class="modal-btns">
+      <button class="btn btn-save" onclick="doReset()">確定重置</button>
+      <button class="btn btn-close" onclick="closeModal('resetModal')">取消</button>
     </div>
-
-    <div class="result-box">
-        <div class="detected-lang" id="detectedLang">對話狀態：準備就緒</div>
-        <div class="result-text" id="outputText">請按上方按鈕開始錄音...</div>
-    </div>
-
-    <div class="action-btns">
-        <button class="btn-sec" onclick="speakResult()">🔊 重播語音</button>
-        <button class="btn-sec" onclick="copyResult()">📋 複製結果</button>
-    </div>
-
-    <div class="tip-info">Designed for Apple Style ‧ 雙模型備援 ‧ 聲調辨識</div>
+  </div>
 </div>
 
 <script>
-    let mediaRecorder = null, audioChunks = [], isRecording = false;
-    let state = { text: "", langCode: "ja-JP", gender: "female", detected: "zh" };
-    let systemVoices = [];
+// ════════════════ LZ-String compression (inline, MIT License) ════════════════
+// Adapted from https://github.com/pieroxy/lz-string
+const LZString=(()=>{const f="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";const r={};for(let i=0;i<f.length;i++)r[f[i]]=i;function compress(s){if(s==null)return"";let d={},p="",w="",c,result="",q=2,n=3,o=0,g=0;const push=b=>{o=(o<<1)|b;if(++g===6){result+=f[o];o=0;g=0}};const pushBits=(v,l)=>{for(let m=1<<(l-1);m;m>>=1)push(v&m?1:0)};for(let i=0;i<s.length;i++){c=s[i];if(!(c in d)){d[c]={};if(q<4){pushBits(1,2);pushBits(c.charCodeAt(0),q===2?8:16);if(q===2)q=3;else{q=4;n=Math.pow(2,n)}}else{pushBits(3,2);pushBits(c.charCodeAt(0),16)}}w=p+c;if(w in d)p=w;else{let v=d[p];pushBits(v,n);d[w]=Object.keys(d).length;if(Object.keys(d).length>n)n++;p=String(c)}}if(p!==""){let v=d[p];pushBits(v,n)}push(1);push(1);while(g!==0)push(0);return result}
+function decompress(s){if(s==null)return"";let d=[],o=0,g=0,n=3,q=4,p,result="";const readBit=()=>{let b=(r[s[Math.floor(o/6)]]>>(5-o%6))&1;o++;return b};const readBits=l=>{let v=0;for(let i=0;i<l;i++)v=(v<<1)|readBit();return v};let t=readBits(2);if(t===0)p=String.fromCharCode(readBits(8));else if(t===1)p=String.fromCharCode(readBits(16));else return"";d[0]=p;result=p;let entry,w=p;while(true){t=readBits(2);if(t===3)t=readBits(2)+4;if(t===0){let c=String.fromCharCode(readBits(8));if(!(c in d)){d[Object.keys(d).length]=c}entry=c}else if(t===1){let c=String.fromCharCode(readBits(16));if(!(c in d)){d[Object.keys(d).length]=c}entry=c}else if(t===2)break;else entry=d[t]||w[0];result+=entry;d[Object.keys(d).length]=w+entry[0];w=entry}return result}
+return{compress,decompress}})();
 
-    document.addEventListener("DOMContentLoaded", () => {
-        ["gemini_api_key", "gemini_model"].forEach(k => {
-            const v = localStorage.getItem(k);
-            if (v) document.getElementById(k === "gemini_api_key" ? "apiKey" : "modelSelect").value = v;
-        });
-        loadVoices();
-        if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = loadVoices;
+// ════════════════ DEFAULT STATE ════════════════
+const DEFAULT_STATE = {
+  title:"名古屋旅遊行程表",
+  subtitle:"Nagoya Trip 2026",
+  dates:"2026年 8月24日 – 8月29日",
+  people:"4人同行",
+  nights:"6天5夜",
+  days:[
+    {
+      date:"8月24日（一）",title:"抵達名古屋！準備出發 ✈️",theme:"🛬 抵達 & 初探",
+      tip:"Day 1 提醒：抵達後先確認之後幾天的票券。吉卜力公園票極難搶，請提前在官網預購。",
+      events:[
+        {time:"上午 — 抵達",icon:"✈️",title:"抵達中部國際機場（Centrair）",type:"transport",desc:"出關後搭乘名鐵特急 μ-SKY（約28分鐘）直達名古屋站。車票約￥1,360/人，建議提前購買對號座位。"},
+        {time:"中午 — 安頓",icon:"🏨",title:"辦理入住 · 名古屋站周邊飯店",type:"hotel",desc:"推薦住在名古屋站（名駅）一帶，交通最方便，周邊購物也很豐富。行李放好後換上輕便裝備準備出發！"},
+        {time:"中午 12:00",icon:"🍜",title:"午餐：コメダ珈琲 or きしめん",type:"food",desc:"來名古屋就要試試コメダ珈琲的早午餐文化，或到名古屋站內的住よし吃一碗きしめん，感受在地味道！"},
+        {time:"下午 14:00",icon:"🛍️",title:"名古屋站 & JR Gate Tower 逛街",type:"shopping",desc:"JR Gate Tower、大名古屋ビルヂング、名鉄百貨店就在車站旁，輕鬆逛街買伴手禮，感受名古屋繁華商圈。"},
+        {time:"晚上 18:30",icon:"🍱",title:"晚餐：矢場とん（味噌カツ）",type:"food",desc:"名古屋最著名的味噌豬排老店！必點「わらじとんかつ」大份豬排，淋上香濃八丁味噌醬汁。推薦矢場町本店。"},
+        {time:"晚上 20:00",icon:"🌃",title:"大須商店街夜逛",type:"shopping",desc:"飯後漫步大須商店街，有復古服飾、電器、街頭小吃、各式雜貨，夜間氣氛很好。"}
+      ]
+    },
+    {
+      date:"8月25日（二）",title:"樂高樂園一整天！🧱",theme:"🧱 LEGOLAND",
+      tip:"LEGOLAND 提醒：8月是暑假旺季，建議開園前30分鐘抵達！帶好防曬、帽子和水壺。部分水上設施會濺溼，可帶換洗衣物。",
+      events:[
+        {time:"早上 8:00",icon:"☕",title:"飯店早餐 or 便利商店",type:"food",desc:"今天主題樂園日，建議早點吃飽補充體力！7-11 或 FamilyMart 快速解決，準備衝！"},
+        {time:"早上 9:00",icon:"🚃",title:"出發前往 LEGOLAND Japan",type:"transport",desc:"從名古屋站搭乘あおなみ線，終點站金城ふ頭站下車（約24分鐘），出站即抵達樂高樂園。票價約 ¥2,000〜¥4,400（依年齡/日期）。"},
+        {time:"10:00 – 17:00",icon:"🧱",title:"LEGOLAND Japan 暢玩一整天",type:"theme-park",desc:"共8大主題區！推薦：Dragons' Apprentice 雲霄飛車、Pirates' Shore 水上設施、Miniland 城市縮小版（超好拍！）、NINJAGO World 體感射擊。"},
+        {time:"下午 17:30",icon:"🛒",title:"LEGOLAND 官方商店掃貨",type:"shopping",desc:"離場前到出口旁的官方商店買 LEGO 限定商品、名古屋版積木紀念品，這裡有台灣買不到的限定款！"},
+        {time:"晚上 19:00",icon:"🍗",title:"晚餐：世界の山ちゃん（手羽先）",type:"food",desc:"名古屋超有名的胡椒炸雞翅！外皮酥脆、胡椒香氣十足，配上生啤酒超對味。名駅周邊就有分店。"}
+      ]
+    },
+    {
+      date:"8月26日（三）",title:"吉卜力公園魔法之旅 🌳",theme:"🌿 Ghibli Park",
+      tip:"⚠️ 吉卜力公園重要提醒：票券在官方網站（ghibli-park.jp）發售，旺季數月前即售完！公園每週二休園，26日週三可入園。",
+      events:[
+        {time:"早上 8:30",icon:"🚃",title:"出發前往吉卜力公園",type:"transport",desc:"從名古屋站搭乘愛知環状鉄道至八草站（約40分），再轉リニモ磁浮至愛・地球博記念公園站（約10分）。"},
+        {time:"10:00 – 17:00",icon:"🌳",title:"吉卜力公園 Ghibli Park 深度遊",type:"theme-park",desc:"推薦全區票！青春の丘（菲歐娜電梯）、どんどこ森（龍貓）、ジブリの大倉庫（室內展示，最受歡迎！）、魔女の谷（霍爾城堡）、もののけの里。"},
+        {time:"午餐 12:30",icon:"🍽️",title:"園內午餐：稲荷茶屋",type:"food",desc:"稲荷茶屋提供龍貓造型餐點，建議提早去，人氣超高容易售完。飲料和甜點也很值得試試。"},
+        {time:"下午 16:00",icon:"🛒",title:"吉卜力公園限定商店",type:"shopping",desc:"公園內有大量吉卜力限定商品，龍貓、千尋、霍爾等周邊商品這裡才有，記得留好預算！"},
+        {time:"晚上 19:00",icon:"🐟",title:"晚餐：ひつまぶし（鰻魚飯）",type:"food",desc:"名古屋必吃！推薦あつた蓬莱軒或いば昇。三吃法：原味→加蔥薑→加茶泡飯，是名古屋最具代表性的料理。建議提前訂位！"}
+      ]
+    },
+    {
+      date:"8月27日（四）",title:"名古屋城 & 大須商圈 🏯",theme:"🏯 文化 & 購物",
+      tip:"",
+      events:[
+        {time:"早上 9:00",icon:"🏯",title:"名古屋城",type:"attraction",desc:"日本三大名城之一！金色鯱鉾是名古屋的象徵。參觀天守閣、本丸御殿。地鐵名城線「市役所」站步行5分，09:00–16:30，門票¥500。"},
+        {time:"中午 12:00",icon:"🍜",title:"午餐：味噌煮込みうどん",type:"food",desc:"到山本屋總本家吃道地紅味噌烏龍麵，湯頭厚重濃郁，麵條很有嚼勁。配上生雞蛋更好吃。"},
+        {time:"下午 13:30",icon:"🛍️",title:"大須商店街掃貨",type:"shopping",desc:"名古屋最熱鬧的庶民商業街，超過1,200間店！古著服飾、電器扭蛋、たこ焼き街頭小吃、大須觀音。附近有 UniQlo、ドン・キホーテ。"},
+        {time:"晚上 18:30",icon:"🍢",title:"晚餐：どて煮 & 居酒屋",type:"food",desc:"試試名古屋どて煮（味噌炖豬腸）配燒酒，或到栄一帶的居酒屋享受日式宵夜文化。"}
+      ]
+    },
+    {
+      date:"8月28日（五）",title:"榮商圈 & 名品掃貨日 🛍️",theme:"🛒 購物 & 美食",
+      tip:"購物提醒：日本百貨免稅需消費滿¥5,000，記得帶護照！退稅後商品須密封帶出境，不能在日本拆封。ドンキホーテ通常不需達門檻即可免稅。",
+      events:[
+        {time:"早上 10:00",icon:"🏬",title:"榮（Sakae）百貨商圈",type:"shopping",desc:"名古屋最大時尚購物區！松坂屋（老牌百貨）、名古屋三越（地下食品區寶藏多）、LACHIC / PARCO（年輕品牌）、SEGA夾娃娃機聖地。"},
+        {time:"中午 12:30",icon:"🥪",title:"午餐：コンパル 蝦仁三明治",type:"food",desc:"錦通一帶的コンパル超人氣エビフライサンド（蝦仁三明治）是名古屋隱藏名物！炸蝦配上柔軟吐司，超好吃。"},
+        {time:"下午 14:00",icon:"🎁",title:"伴手禮大採購",type:"shopping",desc:"明天就要回台了！小倉あんトースト、エビせんべいの里（蝦煎餅）、なごやん（紅豆餡餅）、コメダ珈琲商品、ドンキホーテ藥妝掃貨。"},
+        {time:"下午 16:30",icon:"🌆",title:"久屋大通公園散步 & 打卡",type:"attraction",desc:"購物累了，到久屋大通公園吹風坐草地，旁邊的 Mirai Tower 夜晚燈光很美，可以拍照留念。"},
+        {time:"晚上 18:30",icon:"🍣",title:"晚餐：回轉壽司 or 最終晚餐",type:"food",desc:"可選スシロー / くら寿司 享受實惠回轉壽司，或到栄找家喜歡的料理好好道別。名古屋最後一個完整的夜晚！"}
+      ]
+    },
+    {
+      date:"8月29日（六）",title:"最後採購 · 搭機返台 🏠",theme:"✈️ 返程日",
+      tip:"🧳 行前必備：護照（效期6個月以上）· Suica/ICOCA 交通卡 · 日幣現金 · 防曬乳+帽子（8月超熱！）· 吉卜力公園票 · 樂高樂園票 · 飯店確認書",
+      events:[
+        {time:"早上 8:00",icon:"☕",title:"最後早餐：コメダ珈琲 モーニング",type:"food",desc:"點飲料就附送吐司和水煮蛋——超划算！名古屋獨有的早餐文化，帶著滿滿回憶出發。"},
+        {time:"早上 9:30",icon:"🛒",title:"名古屋站地下街最終掃貨",type:"shopping",desc:"エスカ（Esca）各式名古屋名産、ユニモール服飾雜貨、ミヤコ地下街藥妝零食，最後補貨機會！"},
+        {time:"起飛前 3 小時出發",icon:"🚃",title:"前往中部國際機場",type:"transport",desc:"從名古屋站搭乘名鐵特急 μ-SKY 至中部國際機場（約28分鐘）。8月暑假人多，安檢排隊時間較長，起飛前3小時出發。"},
+        {time:"機場",icon:"🍽️",title:"機場美食 & 最後土産補購",type:"food",desc:"Centrair 4樓美食街可以吃最後一頓名古屋料理，機場內也有土産店，可補購遺漏的伴手禮。"},
+        {time:"返程",icon:"🏠",title:"搭機返台 · 旅程圓滿結束！",type:"transport",desc:"帶著滿滿的美食記憶、LEGO戰利品、吉卜力限定商品，還有和大家共度的美好時光，安全抵達台灣！下次見，名古屋！👋"}
+      ]
+    }
+  ]
+};
+
+// ════════════════ STATE ════════════════
+let state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+let activeDay = 0;
+let editMode = false;
+let hashDebounce = null;
+let urlSaveStatus = 'idle'; // idle | saving | saved
+
+const TYPE_LABELS = {transport:'交通',food:'美食',attraction:'景點','theme-park':'主題樂園',shopping:'購物',hotel:'住宿'};
+
+// ── Escape HTML ──
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+
+// ── State path updater ──
+function setPath(path, value){
+  const parts = path.replace(/\[(\d+)\]/g,'.$1').split('.');
+  let obj = state;
+  for(let i=0;i<parts.length-1;i++) obj=obj[parts[i]];
+  obj[parts[parts.length-1]] = value;
+  scheduleHashSave();
+}
+
+// ── URL hash persistence ──
+function stateToHash(s){
+  try{ return LZString.compress(JSON.stringify(s)); }
+  catch(e){ return null; }
+}
+function hashToState(h){
+  try{ const s=LZString.decompress(h); return s?JSON.parse(s):null; }
+  catch(e){ return null; }
+}
+function scheduleHashSave(){
+  urlSaveStatus='saving';
+  updateUrlStatus();
+  clearTimeout(hashDebounce);
+  hashDebounce=setTimeout(()=>{
+    const h=stateToHash(state);
+    if(h){
+      try{ history.replaceState(null,'','#'+encodeURIComponent(h)); }catch(e){}
+    }
+    try{ localStorage.setItem('trip_state',JSON.stringify(state)); }catch(e){}
+    urlSaveStatus='saved';
+    updateUrlStatus();
+    setTimeout(()=>{urlSaveStatus='idle';updateUrlStatus();},2000);
+  },600);
+}
+function updateUrlStatus(){
+  const el=document.getElementById('urlStatus');
+  if(!el)return;
+  if(urlSaveStatus==='saving'){el.textContent='⏳ 儲存中…';el.className='url-status';}
+  else if(urlSaveStatus==='saved'){el.textContent='✅ 已儲存到網址';el.className='url-status saved';}
+  else{el.textContent='';el.className='url-status';}
+}
+function getCurrentUrl(){
+  const h=stateToHash(state);
+  if(!h)return window.location.href;
+  return window.location.href.split('#')[0]+'#'+encodeURIComponent(h);
+}
+
+// ════════════════ RENDER ════════════════
+function render(){
+  const app=document.getElementById('app');
+  app.className=editMode?'edit-mode':'';
+  app.innerHTML=buildHTML();
+  // Attach listeners
+  app.querySelectorAll('[data-path][contenteditable=true]').forEach(el=>{
+    el.addEventListener('input',e=>{
+      const v=e.target.innerText.replace(/\n/g,' ').trim();
+      setPath(e.target.dataset.path,v);
+    });
+  });
+  app.querySelectorAll('select[data-path]').forEach(el=>{
+    el.addEventListener('change',e=>{
+      setPath(e.target.dataset.path,e.target.value);
+      render();
+    });
+  });
+}
+
+function buildHTML(){
+  const s=state; const em=editMode;
+  const ce=em?'contenteditable="true"':'';
+
+  // Header
+  let h=`<div class="header">
+    <h1 ${ce} data-path="title">${esc(s.title)}</h1>
+    <div class="header-meta">
+      <div class="meta-chip">📅 <span ${ce} data-path="dates">${esc(s.dates)}</span></div>
+      <div class="meta-chip">👥 <span ${ce} data-path="people">${esc(s.people)}</span></div>
+      <div class="meta-chip">🗓️ <span ${ce} data-path="nights">${esc(s.nights)}</span></div>
+    </div>
+  </div>`;
+
+  // Toolbar
+  h+=`<div class="toolbar">
+    <button class="btn btn-edit${em?' active':''}" onclick="toggleEdit()">
+      ${em?'✅ 完成編輯':'✏️ 編輯行程'}
+    </button>
+    <button class="btn btn-share" onclick="openShare()">🔗 共用連結</button>
+    <button class="btn btn-save" onclick="downloadJSON()">💾 匯出 JSON</button>
+    <button class="btn btn-load" onclick="document.getElementById('file-input').click()">📂 匯入</button>
+    <button class="btn btn-close" style="border:2px solid #888;color:#555;background:#fff" onclick="document.getElementById('githubModal').classList.add('open')">🐙 GitHub 教學</button>
+    ${em?`<button class="btn btn-add-day" onclick="addDay()">＋ 新增天數</button>
+          <button class="btn btn-reset" onclick="document.getElementById('resetModal').classList.add('open')">🔄 重置</button>`:''}
+    <div class="toolbar-right"><span class="url-status" id="urlStatus"></span></div>
+  </div>
+  <input type="file" id="file-input" accept=".json" onchange="loadJSON(event)">`;
+
+  // Tabs
+  h+=`<div class="tabs-wrap"><div class="tabs">`;
+  s.days.forEach((day,i)=>{
+    const ds=day.date.replace(/（.）/,'');
+    h+=`<button class="tab-btn${i===activeDay?' active':''}" onclick="showDay(${i})">Day ${i+1}<br><small>${esc(ds)}</small>
+      <button class="tab-del" onclick="event.stopPropagation();deleteDay(${i})">×</button>
+    </button>`;
+  });
+  h+=`</div></div>`;
+
+  // Day panels
+  s.days.forEach((day,di)=>{
+    h+=`<div class="day-panel${di===activeDay?' active':''}" id="day-${di}">
+      <div class="day-header">
+        <div class="day-num-badge"><span class="n">${di+1}</span>DAY</div>
+        <div class="day-info">
+          <h2 ${ce} data-path="days[${di}].title">${esc(day.title)}</h2>
+          <div class="day-date" ${ce} data-path="days[${di}].date">${esc(day.date)}</div>
+        </div>
+        <div class="day-theme" ${ce} data-path="days[${di}].theme">${esc(day.theme)}</div>
+      </div>
+      <div class="timeline">`;
+
+    day.events.forEach((ev,ei)=>{
+      h+=`<div class="event ${esc(ev.type||'')}">
+        <div class="event-row">
+          <div class="event-body">
+            <div class="event-time" ${ce} data-path="days[${di}].events[${ei}].time">${esc(ev.time)}</div>
+            <div class="event-title">
+              <span ${ce} data-path="days[${di}].events[${ei}].icon" style="margin-right:4px">${esc(ev.icon)}</span
+              ><span ${ce} data-path="days[${di}].events[${ei}].title">${esc(ev.title)}</span>
+            </div>
+            <div class="event-desc" ${ce} data-path="days[${di}].events[${ei}].desc">${esc(ev.desc)}</div>
+            <div class="type-select">
+              <select data-path="days[${di}].events[${ei}].type">
+                ${Object.entries(TYPE_LABELS).map(([v,l])=>`<option value="${v}"${ev.type===v?' selected':''}>${l}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="event-actions">
+            <button class="icon-btn del-btn" onclick="deleteEvent(${di},${ei})" title="刪除">🗑</button>
+            <button class="icon-btn move-btn" onclick="moveEvent(${di},${ei},-1)" title="上移">↑</button>
+            <button class="icon-btn move-btn" onclick="moveEvent(${di},${ei},1)" title="下移">↓</button>
+          </div>
+        </div>
+      </div>`;
     });
 
-    function loadVoices() { systemVoices = window.speechSynthesis.getVoices(); }
-    const delay = ms => new Promise(res => setTimeout(res, ms));
+    h+=`<button class="add-event-btn" onclick="addEvent(${di})">＋ 新增行程項目</button>
+      </div>`; // timeline
 
-    async function fetchGemini(apiKey, primaryModel, body) {
-        const models = [...new Set([primaryModel, "gemini-3.6-flash", "gemini-3.5-flash"])];
-        for (let m of models) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
-            for (let i = 0; i < 2; i++) {
-                try {
-                    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-                    const data = await res.json();
-                    if (res.ok && data.candidates?.[0]?.content) return data;
-                    if (data.error && (data.error.code === 429 || data.error.message.includes("quota"))) {
-                        await delay(1200); continue;
-                    }
-                    throw new Error(data.error?.message || "API 錯誤");
-                } catch (e) {
-                    if (i === 1 && m === models[models.length - 1]) throw e;
-                }
-            }
-        }
-        throw new Error("伺服器繁忙，請稍等 3~5 秒後重試。");
+    if(day.tip||em){
+      h+=`<div class="tip-box" ${ce} data-path="days[${di}].tip">${esc(day.tip)||(em?'（在此輸入當天備注或提醒）':'')}</div>`;
     }
+    h+=`</div>`; // day-panel
+  });
 
-    async function toggleRecording() {
-        const micBtn = document.getElementById("micBtn");
-        if (!isRecording) {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-                mediaRecorder.onstop = async () => {
-                    const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-                    await processAudio(blob);
-                };
-                mediaRecorder.start();
-                isRecording = true;
-                micBtn.classList.add("recording");
-                micBtn.innerText = "🛑 正在聆聽...（講完再按一下）";
-                document.getElementById("detectedLang").innerText = "錄音中...";
-                document.getElementById("outputText").innerText = "正在錄下對話...";
-            } catch (err) { alert("存取麥克風失敗：" + err.message); }
-        } else {
-            isRecording = false;
-            micBtn.classList.remove("recording");
-            micBtn.innerText = "⏳ 辨識與翻譯中...";
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(t => t.stop());
-            }
-        }
-    }
+  h+=`<div class="footer">🗾 ${esc(s.title)} · ${esc(s.dates)} · ${esc(s.people)}<br>祝旅途愉快，玩得盡興！</div>`;
+  return h;
+}
 
-    async function processAudio(blob) {
-        const apiKey = document.getElementById("apiKey").value.trim();
-        const model = document.getElementById("modelSelect").value;
-        if (!apiKey) { alert("請貼上 API Key！"); resetMicBtn(); return; }
+// ════════════════ ACTIONS ════════════════
+function showDay(i){ activeDay=i; render(); }
+function toggleEdit(){ editMode=!editMode; render(); }
 
-        localStorage.setItem("gemini_api_key", apiKey);
-        localStorage.setItem("gemini_model", model);
+function addEvent(di){
+  state.days[di].events.push({time:'時間',icon:'📍',title:'新行程項目',type:'attraction',desc:'說明內容'});
+  scheduleHashSave(); render();
+}
+function deleteEvent(di,ei){
+  if(!confirm('確定刪除此行程？'))return;
+  state.days[di].events.splice(ei,1);
+  scheduleHashSave(); render();
+}
+function moveEvent(di,ei,dir){
+  const evs=state.days[di].events; const ni=ei+dir;
+  if(ni<0||ni>=evs.length)return;
+  [evs[ei],evs[ni]]=[evs[ni],evs[ei]];
+  scheduleHashSave(); render();
+}
+function addDay(){
+  state.days.push({date:`第 ${state.days.length+1} 天`,title:'新的一天',theme:'📍 主題',tip:'',events:[{time:'09:00',icon:'📍',title:'行程項目',type:'attraction',desc:'說明內容'}]});
+  activeDay=state.days.length-1;
+  scheduleHashSave(); render();
+}
+function deleteDay(di){
+  if(state.days.length<=1){toast('至少保留一天行程');return;}
+  if(!confirm(`確定刪除 Day ${di+1}（${state.days[di].date}）？`))return;
+  state.days.splice(di,1);
+  if(activeDay>=state.days.length)activeDay=state.days.length-1;
+  scheduleHashSave(); render();
+}
+function doReset(){
+  state=JSON.parse(JSON.stringify(DEFAULT_STATE));
+  activeDay=0; editMode=false;
+  try{history.replaceState(null,'',window.location.pathname);}catch(e){}
+  try{localStorage.removeItem('trip_state');}catch(e){}
+  closeModal('resetModal'); render();
+  toast('✅ 已重置為預設行程');
+}
 
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = async () => {
-            const base64 = reader.result.split(',')[1];
-            const prompt = `專業中日即時翻譯任務：
-1. 性別判斷："male" 或 "female"
-2. 文字轉寫：完整內容填入 "original"
-3. 翻譯：中文 ➔ 禮貌日文(丁寧語)；日文 ➔ 繁體中文
-僅輸出 JSON：{"gender":"male","detected":"zh","original":"..","translation":".."}`;
+// ── Save / Load ──
+function downloadJSON(){
+  const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='trip.json'; a.click();
+  toast('✅ 行程已匯出為 JSON');
+}
+function loadJSON(e){
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d&&Array.isArray(d.days)){state=d;activeDay=0;scheduleHashSave();render();toast('✅ 行程載入成功！');}
+      else toast('❌ 格式不正確');
+    }catch(err){toast('❌ 載入失敗：'+err.message);}
+  };
+  r.readAsText(f); e.target.value='';
+}
 
-            try {
-                const data = await fetchGemini(apiKey, model, { contents: [{ parts: [{ inline_data: { mime_type: blob.type || "audio/webm", data: base64 } }, { text: prompt }] }] });
-                let raw = data.candidates[0].content.parts[0].text.trim().replace(/```json/g, "").replace(/```/g, "").trim();
-                const parsed = JSON.parse(raw);
+// ── Share ──
+function openShare(){
+  const url=getCurrentUrl();
+  document.getElementById('shareUrl').textContent=url;
+  document.getElementById('shareModal').classList.add('open');
+}
+function copyShareUrl(){
+  const url=getCurrentUrl();
+  (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=url; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  }).then(()=>{}).finally(()=>toast('✅ 連結已複製！傳給夥伴後直接開啟就能看到行程'));
+}
+function downloadHTML(){
+  // Embed current state into a new HTML file
+  const marker='const DEFAULT_STATE = ';
+  const src=document.documentElement.outerHTML;
+  const idx=src.indexOf(marker);
+  const end=src.indexOf(';\n// ════════════════ STATE',idx);
+  if(idx<0||end<0){toast('❌ 無法生成分享版本');return;}
+  const newSrc=src.substring(0,idx)+marker+JSON.stringify(state)+src.substring(end);
+  const b=new Blob(['<!DOCTYPE html>\n'+newSrc],{type:'text/html'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='行程表_共用版.html'; a.click();
+  toast('✅ 已下載共用版 HTML，直接傳給夥伴開啟即可！');
+}
 
-                state.text = parsed.translation;
-                state.gender = parsed.gender || "female";
-                state.detected = parsed.detected;
+// ── Modals / Toast ──
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('click',e=>{
+  ['shareModal','githubModal','resetModal'].forEach(id=>{
+    const m=document.getElementById(id);
+    if(m&&e.target===m)m.classList.remove('open');
+  });
+});
+function toast(msg,dur=3000){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
 
-                document.getElementById("originalText").value = parsed.original;
-                updateResultUI();
-            } catch (err) {
-                document.getElementById("outputText").innerText = "翻譯失敗：" + err.message;
-            } finally { resetMicBtn(); }
-        };
-    }
-
-    async function retranslateManual() {
-        const apiKey = document.getElementById("apiKey").value.trim();
-        const model = document.getElementById("modelSelect").value;
-        const text = document.getElementById("originalText").value.trim();
-        if (!text) return alert("原文框無文字！");
-
-        document.getElementById("outputText").innerText = "重新翻譯中...";
-        const prompt = state.detected === "zh" 
-            ? `將以下中文譯為禮貌日文（丁寧語），直接提供結果：\n${text}`
-            : `將以下日文譯為繁體中文，直接提供結果：\n${text}`;
-
-        try {
-            const data = await fetchGemini(apiKey, model, { contents: [{ parts: [{ text: prompt }] }] });
-            state.text = data.candidates[0].content.parts[0].text.trim();
-            updateResultUI();
-        } catch (err) {
-            document.getElementById("outputText").innerText = "連線失敗：" + err.message;
-        }
-    }
-
-    function updateResultUI() {
-        const isZh = state.detected === "zh";
-        const genderTag = state.gender === "male" ? "👨 男聲" : "👩 女聲";
-        state.langCode = isZh ? "ja-JP" : "zh-TW";
-        document.getElementById("detectedLang").innerText = `偵測到：【${isZh ? "中文" : "日文"} (${genderTag})】 ➔ 譯為${isZh ? "日文" : "繁體中文"}：`;
-        document.getElementById("outputText").innerText = state.text;
-        speakText(state.text, state.langCode, state.gender);
-    }
-
-    function resetMicBtn() {
-        const btn = document.getElementById("micBtn");
-        btn.classList.remove("recording");
-        btn.innerText = "🎤 按一下說話（中/日皆可）";
-    }
-
-    function speakText(text, lang, gender) {
-        if (!text) return;
-        window.speechSynthesis.cancel();
-
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = lang;
-        u.pitch = gender === 'male' ? 0.75 : 1.1;
-        u.rate = gender === 'male' ? 0.85 : 0.9;
-
-        if (!systemVoices.length) systemVoices = window.speechSynthesis.getVoices();
-        const prefix = lang.split('-')[0];
-        const match = systemVoices.find(v => {
-            if (!v.lang.toLowerCase().replace('_', '-').startsWith(prefix)) return false;
-            const n = v.name.toLowerCase();
-            return gender === 'male' ? (n.includes('male') || n.includes('男') || n.includes('otoya') || n.includes('ichiro'))
-                                     : (n.includes('female') || n.includes('女') || n.includes('kyoko') || n.includes('o-ren'));
-        });
-
-        if (match) u.voice = match;
-        window.speechSynthesis.speak(u);
-    }
-
-    function speakResult() { if (state.text) speakText(state.text, state.langCode, state.gender); }
-    function copyResult() { if (state.text) navigator.clipboard.writeText(state.text).then(() => alert("已複製！")); }
+// ════════════════ INIT ════════════════
+(function init(){
+  // 1. Try URL hash first (highest priority — shared link)
+  try{
+    const hash=decodeURIComponent(window.location.hash.slice(1));
+    if(hash){const s=hashToState(hash);if(s&&s.days){state=s;}}
+  }catch(e){}
+  // 2. Fallback: localStorage
+  if(state===null||state===undefined||JSON.stringify(state)===JSON.stringify(DEFAULT_STATE)){
+    try{const s=localStorage.getItem('trip_state');if(s){const p=JSON.parse(s);if(p&&p.days)state=p;}}catch(e){}
+  }
+  render();
+})();
 </script>
-
 </body>
 </html>
