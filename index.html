@@ -386,7 +386,8 @@ function scheduleSave(){
   _saveTimer = setTimeout(commitSave, 1000);
 }
 function commitSave(){
-  try{ localStorage.setItem('trip_v3', JSON.stringify(state)); }catch(e){}
+  state._v = STATE_VERSION; // tag version so stale caches are rejected on load
+  try{ localStorage.setItem('trip_v4', JSON.stringify(state)); }catch(e){}
   try{
     const enc = encodeState(state);
     if(enc) history.replaceState(null,'','#'+enc);
@@ -729,7 +730,7 @@ function doReset(){
   state=JSON.parse(JSON.stringify(DEFAULT_STATE));
   activeDay=0; editMode=false;
   try{ history.replaceState(null,'',location.pathname); }catch(e){}
-  try{ localStorage.removeItem('trip_v3'); }catch(e){}
+  try{ localStorage.removeItem('trip_v4'); }catch(e){}
   closeModal('resetModal'); render();
   toast('✅ 已重置為預設行程');
 }
@@ -813,14 +814,21 @@ function migrateState(s){
 }
 
 // ══ Init ══
+const STATE_VERSION = 4; // bump when DEFAULT_STATE content changes
 (function init(){
   try{
     const hash=location.hash.slice(1);
-    if(hash){ const s=decodeState(hash); if(s&&s.days) state=s; }
+    if(hash){
+      const s=decodeState(hash);
+      // only restore from hash if it carries the current version
+      if(s&&s.days&&s._v===STATE_VERSION) state=s;
+      else if(hash) history.replaceState(null,'',location.pathname); // clear stale hash
+    }
   }catch(e){}
-  if(JSON.stringify(state)===JSON.stringify(DEFAULT_STATE)){
-    try{ const s=localStorage.getItem('trip_v3'); if(s){ const p=JSON.parse(s); if(p&&p.days) state=p; } }catch(e){}
-  }
+  try{
+    const s=localStorage.getItem('trip_v4');
+    if(s){ const p=JSON.parse(s); if(p&&p.days&&p._v===STATE_VERSION) state=p; }
+  }catch(e){}
   migrateState(state);
   render();
   ['shareModal','githubModal','resetModal'].forEach(id=>{
